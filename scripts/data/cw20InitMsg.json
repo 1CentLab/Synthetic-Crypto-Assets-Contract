@@ -1,0 +1,8 @@
+{
+    "name": "Golden Stars",
+    "symbol": "STAR",
+    "decimals": 2,
+    "mint": {
+        "minter":"bac"
+    }
+}
