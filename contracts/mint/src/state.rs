@@ -9,12 +9,14 @@ use sca::mint::Asset;
 pub struct Position {
     pub open_time: u64,
     pub size: Uint128,
-    pub debt: Uint128
+    pub debt: Uint128,
+    pub unrealized_liquidated_amount: Uint128,
+    pub is_liquidated: bool
 }
 
 impl Position {
     pub fn default() -> Position {
-        Position { open_time: 0, size: Uint128::new(0), debt: Uint128::new(0)}
+        Position { open_time: 0, size: Uint128::new(0), debt: Uint128::new(0), unrealized_liquidated_amount: Uint128::new(0), is_liquidated: false}
     }
 }
 

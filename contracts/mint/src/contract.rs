@@ -45,16 +45,14 @@ pub fn execute(
      }
 }
 
-pub fn try_mass_update(deps:DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
-    //get price
-    let asset = get_asset(deps.storage);
-    let sca_prices = get_sca_oracle_price(deps.as_ref());
-
+pub fn try_mass_update(deps:DepsMut, _env: Env, _info: MessageInfo) -> Result<Response, ContractError> {
     //get all position 
     let positions = get_all_positions(deps.storage);
+    let asset = get_asset(deps.storage);
 
     for p_user in positions{
-        let position  = get_position(deps.storage, p_user);
+        let position = update_position(deps.as_ref(), p_user.clone(), &asset);
+        set_position(deps.storage, p_user, position)?;
     }
 
 
@@ -174,29 +172,24 @@ pub fn try_close_position(deps: DepsMut, _env: Env, info: MessageInfo, sca_amoun
     ]))
 }
 
+fn update_position(deps: Deps, p_user: String, asset: &Asset) -> Position{
+    let mut position = get_position(deps.storage, p_user.clone());
 
+    let sca_oracle_price = query_sca_oracle_price(deps);
+    let off_chain_value = position.debt * asset.mcr * sca_oracle_price.price / sca_oracle_price.multiplier / asset.multiplier;
 
-
-fn update_position(deps: DepsMut, p_user: String, sca_prices: (Uint128, Uint128), asset: Asset) -> Result<Response, ContractError>{
-    let mut position = get_position(deps.storage, p_user);
-    let off_chain_value = position.debt * asset.mcr * sca_prices.0 / sca_prices.1 / asset.multiplier;
-
-    if off_chain_value < position.size {
-        return Ok(Response::new().add_attribute("Method", "try_update_position"));
+    if off_chain_value < position.size || position.is_liquidated == true {
+        return position;
     }
 
     //amount of collateral amount need to be reduced from the supply
-    let c_amount = off_chain_value - position.size;
-    
-    
+    let c_amount = off_chain_value - position.size; 
+    position.unrealized_liquidated_amount = c_amount;
 
-    let mut messages: Vec<CosmosMsg> = vec![];
-    Ok(Response::new().add_messages(messages).add_attributes(vec![
-        ("Method", "try_update_position")
-    ]))
-
-    // if discount ==> user -> sca -> contract, get back size of real world collateral
-    // if premium ==> contract -> buy sca in pool
+    if position.unrealized_liquidated_amount > position.size {
+        position.is_liquidated = true;
+    }
+    position
 }
 
 
