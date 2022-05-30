@@ -15,6 +15,7 @@ pub struct Asset {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
+    pub controller: String
 }
 
 
@@ -50,5 +51,4 @@ pub enum ExecuteMsg {
     //get asset price and perform checking liquidation
     MassUpdate {
     }
-
 }

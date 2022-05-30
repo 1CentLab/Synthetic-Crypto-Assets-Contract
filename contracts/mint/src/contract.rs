@@ -8,8 +8,12 @@ use crate::error::ContractError;
 use sca::mint::{Asset, ExecuteMsg, InstantiateMsg, QueryMsg};
 use sca::pair::{QueryMsg as PoolQueryMsg, ReserveResponse};
 use sca::oracle::{QueryMsg as OracleQueryMsg, ScaPriceResponse};
-use crate::state::{set_asset, get_asset, 
-    get_position, set_position, Position, get_all_positions};
+use crate::state::{
+    CONTROLLER,
+    set_asset, get_asset, 
+    get_position, set_position, Position, get_all_positions,
+    ClosedPosition, set_closed_position, remove_position
+};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:mint";
@@ -20,10 +24,11 @@ pub fn instantiate(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    _msg: InstantiateMsg,
+    msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
     
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
+    CONTROLLER.save(deps.storage, &msg.controller)?;
     Ok(Response::new()
         .add_attribute("method", "instantiate")
         .add_attribute("owner", info.sender)
@@ -45,26 +50,44 @@ pub fn execute(
      }
 }
 
-pub fn try_mass_update(deps:DepsMut, _env: Env, _info: MessageInfo) -> Result<Response, ContractError> {
+pub fn try_mass_update(deps:DepsMut, env: Env, _info: MessageInfo) -> Result<Response, ContractError> {
     //get all position 
     let positions = get_all_positions(deps.storage);
     let asset = get_asset(deps.storage);
 
+    let mut liquidated_collateral = Uint128::new(0);
     for p_user in positions{
         let position = update_position(deps.as_ref(), p_user.clone(), &asset);
+        if position.is_liquidated {
+            liquidated_collateral = liquidated_collateral + position.size;
+            
+            // update closed position
+            let closed_position = ClosedPosition{
+                close_time: env.block.time.seconds(),
+                size: position.size,
+                debt: position.debt,
+                is_liquidated: true
+            };
+
+            set_closed_position(deps.storage, p_user.clone(), closed_position)?;
+            remove_position(deps.storage, p_user.clone());
+        }
         set_position(deps.storage, p_user, position)?;
     }
 
-
-    //find position under collateralize 
-
-
-    // force liquidation + auction opening (Check premium: Perform buy back or auction)
-
-
+    //transfer liquidated amount to controller contract
     let mut messages: Vec<CosmosMsg> = vec![];
+    messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
+        contract_addr: asset.collateral,
+        msg: to_binary(&Cw20ExecuteMsg::Transfer{
+            recipient: CONTROLLER.load(deps.storage)?,
+            amount: liquidated_collateral
+        })?,
+        funds: vec![],
+    }));
+
     Ok(Response::new().add_messages(messages).add_attributes(vec![
-        ("Method", "try_open_position")
+        ("Method", "try_mass_update")
     ]))
 }
 
@@ -191,6 +214,8 @@ fn update_position(deps: Deps, p_user: String, asset: &Asset) -> Position{
     }
     position
 }
+
+
 
 
 #[cfg_attr(not(feature = "library"), entry_point)]
