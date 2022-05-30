@@ -32,6 +32,28 @@ class Mint(Bot):
             }
         )
 
+    def get_all_positions(self):
+        self.query_contract(
+            self.contract_addr,
+            {
+                "get_all_positions": {
+    
+                }
+            }
+        )
+
+    
+    def get_sca_pool_price(self):
+        self.query_contract(
+            self.contract_addr,
+            {
+                "get_sca_pool_reserve": {
+
+                }
+            }
+        )
+
+
     ### SETTER ######333
     def set_asset(self, sender, oracle, pair, sca, collateral, mcr, multiplier):
         asset = {

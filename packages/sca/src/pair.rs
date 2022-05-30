@@ -48,3 +48,10 @@ pub enum QueryMsg {
     GetReserves {},
     GetAmountsOut {amount_in: Uint128, path: Vec<String>}
 }
+
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
+pub struct ReserveResponse {
+    pub reserve0: Uint128,
+    pub reserve1: Uint128
+}

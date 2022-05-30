@@ -13,9 +13,6 @@ pub struct Asset {
     pub multiplier: Uint128
 }
 
-
-
-
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
 pub struct InstantiateMsg {
 }
@@ -26,7 +23,9 @@ pub struct InstantiateMsg {
 pub enum QueryMsg {
     GetState {},
     GetScaOraclePrice{},
-    GetPosition {user: String}
+    GetScaPoolReserve{},
+    GetPosition {user: String},
+    GetAllPositions{}
 }
 
 
@@ -46,6 +45,10 @@ pub enum ExecuteMsg {
 
     ClosePosition {
         sca_amount: Uint128
+    },
+
+    //get asset price and perform checking liquidation
+    MassUpdate {
     }
-    
+
 }

@@ -4,7 +4,7 @@ use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response,
 use cw2::set_contract_version;
 use cw20::{Cw20ExecuteMsg, Cw20QueryMsg, BalanceResponse, TokenInfoResponse};
 use crate::error::ContractError;
-use sca::pair::{ExecuteMsg, InstantiateMsg, QueryMsg};
+use sca::pair::{ExecuteMsg, InstantiateMsg, QueryMsg, ReserveResponse};
 use crate::state::{
     State, STATE, Reserve, RESERVES,
     get_tokens, get_lp_token,
@@ -282,8 +282,9 @@ fn query_amounts_out(deps: Deps, amount_in: Uint128, path: Vec<String>) -> (Uint
     return (amount_in, amount_out)
 }
 
-fn query_reserves(deps: Deps) -> (Uint128, Uint128) {
-    get_reserves(deps.storage)
+fn query_reserves(deps: Deps) -> ReserveResponse {
+    let reserves = get_reserves(deps.storage);
+    ReserveResponse { reserve0: reserves.0, reserve1: reserves.1 }
 }
 
 fn query_lp_token_info(deps: Deps, user: String) -> (Uint128, Uint128, u8){

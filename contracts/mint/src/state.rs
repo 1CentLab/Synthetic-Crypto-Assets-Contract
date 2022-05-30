@@ -1,7 +1,7 @@
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 
-use cosmwasm_std::{Uint128, Storage, StdResult};
+use cosmwasm_std::{Uint128, Storage, StdResult, Order};
 use cw_storage_plus::{Map, Item};
 use sca::mint::Asset;
 
@@ -39,6 +39,28 @@ pub fn get_position(storage: &dyn Storage, user: String) -> Position {
     }
 }
 
+
+pub fn get_all_positions(storage: &dyn Storage) -> Vec<String>{
+    let mut vec = Vec::new();
+
+    let data: StdResult<Vec<(Vec<u8>,Position)>>  = POSITION
+        .range(storage, Option::None, Option::None, Order::Ascending)
+        .collect();
+
+    match data{
+        Ok(positions)=>{
+            for position in positions.iter(){
+                let string_value = String::from_utf8(position.0.clone());
+                match string_value {
+                    Ok(s)=> vec.push(s.parse::<String>().unwrap()),
+                    Err(_)=> continue
+                }
+            }
+            vec
+        }
+        Err(_) => vec,
+        } 
+} 
 
 pub fn set_position(storage: &mut dyn Storage, user: String, position: Position) -> StdResult<()> {
     POSITION.save(storage,user, &position)

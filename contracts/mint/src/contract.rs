@@ -6,8 +6,10 @@ use cw20::{Cw20ExecuteMsg};
 
 use crate::error::ContractError;
 use sca::mint::{Asset, ExecuteMsg, InstantiateMsg, QueryMsg};
+use sca::pair::{QueryMsg as PoolQueryMsg, ReserveResponse};
 use sca::oracle::{QueryMsg as OracleQueryMsg, ScaPriceResponse};
-use crate::state::{set_asset, get_asset, get_position, set_position, Position};
+use crate::state::{set_asset, get_asset, 
+    get_position, set_position, Position, get_all_positions};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:mint";
@@ -38,8 +40,34 @@ pub fn execute(
     match msg {
         ExecuteMsg::SetAsset { asset } => try_set_asset(deps, asset),
         ExecuteMsg::OpenPosition {collateral_amount, ratio} => try_open_position(deps, _env, info, collateral_amount, ratio),
-        ExecuteMsg::ClosePosition { sca_amount } => try_close_position(deps, _env, info, sca_amount)
+        ExecuteMsg::ClosePosition { sca_amount } => try_close_position(deps, _env, info, sca_amount),
+        ExecuteMsg::MassUpdate {  } => try_mass_update(deps, _env, info)
+     }
+}
+
+pub fn try_mass_update(deps:DepsMut, env: Env, info: MessageInfo) -> Result<Response, ContractError> {
+    //get price
+    let asset = get_asset(deps.storage);
+    let sca_prices = get_sca_oracle_price(deps.as_ref());
+
+    //get all position 
+    let positions = get_all_positions(deps.storage);
+
+    for p_user in positions{
+        let position  = get_position(deps.storage, p_user);
     }
+
+
+    //find position under collateralize 
+
+
+    // force liquidation + auction opening (Check premium: Perform buy back or auction)
+
+
+    let mut messages: Vec<CosmosMsg> = vec![];
+    Ok(Response::new().add_messages(messages).add_attributes(vec![
+        ("Method", "try_open_position")
+    ]))
 }
 
 
@@ -59,7 +87,7 @@ pub fn try_open_position(deps: DepsMut, env: Env, info: MessageInfo, collateral_
     }
 
     let sca_price = query_sca_oracle_price(deps.as_ref());
-    let sca_amount = collateral_amount * asset.multiplier / ratio * sca_price.1 / sca_price.0; // collateral / (ratio * sca_price/usd)
+    let sca_amount = collateral_amount * asset.multiplier / ratio * sca_price.price / sca_price.multiplier; // collateral / (ratio * sca_price/usd)
 
     //transfer amount of collateral to contract 
     let mut messages: Vec<CosmosMsg> = vec![];
@@ -146,13 +174,45 @@ pub fn try_close_position(deps: DepsMut, _env: Env, info: MessageInfo, sca_amoun
     ]))
 }
 
+
+
+
+fn update_position(deps: DepsMut, p_user: String, sca_prices: (Uint128, Uint128), asset: Asset) -> Result<Response, ContractError>{
+    let mut position = get_position(deps.storage, p_user);
+    let off_chain_value = position.debt * asset.mcr * sca_prices.0 / sca_prices.1 / asset.multiplier;
+
+    if off_chain_value < position.size {
+        return Ok(Response::new().add_attribute("Method", "try_update_position"));
+    }
+
+    //amount of collateral amount need to be reduced from the supply
+    let c_amount = off_chain_value - position.size;
+    
+    
+
+    let mut messages: Vec<CosmosMsg> = vec![];
+    Ok(Response::new().add_messages(messages).add_attributes(vec![
+        ("Method", "try_update_position")
+    ]))
+
+    // if discount ==> user -> sca -> contract, get back size of real world collateral
+    // if premium ==> contract -> buy sca in pool
+}
+
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::GetState {} => to_binary(&query_state(deps)),
         QueryMsg::GetScaOraclePrice { } => to_binary(&query_sca_oracle_price(deps)),
-        QueryMsg::GetPosition { user } =>  to_binary(&query_position(deps, user))
+        QueryMsg::GetPosition { user } =>  to_binary(&query_position(deps, user)),
+        QueryMsg::GetAllPositions {  } => to_binary(&query_all_position(deps)),
+        QueryMsg::GetScaPoolReserve{  } => to_binary(&query_sca_pool_price(deps))
     }
+}
+
+fn query_all_position(deps:Deps) -> Vec<String>{
+    get_all_positions(deps.storage)
 }
 
 fn query_state(deps: Deps) -> Asset {
@@ -163,16 +223,19 @@ fn query_position(deps: Deps, user: String) -> Position {
     get_position(deps.storage, user)
 }
 
-fn query_sca_oracle_price(deps: Deps) -> (Uint128, Uint128) {
+fn query_sca_oracle_price(deps: Deps) -> ScaPriceResponse{
     let res = get_sca_oracle_price(deps);
 
     match res {
         Ok(value) => value,
-        Err(_) => (Uint128::new(0),Uint128::new(0))
+        Err(_) => ScaPriceResponse {
+            price: Uint128::new(0),
+            multiplier: Uint128::new(0)
+        }
     }
 }
 
-fn get_sca_oracle_price(deps: Deps) -> Result<(Uint128, Uint128), ContractError> {
+fn get_sca_oracle_price(deps: Deps) -> Result<ScaPriceResponse, ContractError> {
     let state = get_asset(deps.storage);
 
     let query_msg = OracleQueryMsg::GetPrice { sca: state.sca};
@@ -184,6 +247,31 @@ fn get_sca_oracle_price(deps: Deps) -> Result<(Uint128, Uint128), ContractError>
     }))?;
     
 
-    Ok((query_response.price, query_response.multiplier))
+    Ok(query_response)
 }
 
+fn query_sca_pool_price(deps: Deps) -> ReserveResponse {
+    let res = get_sca_pool_price(deps);
+
+    match res {
+        Ok(value) => value ,
+        Err(_) => ReserveResponse{
+            reserve0: Uint128::new(0),
+            reserve1: Uint128::new(1)
+        }
+    }
+}
+
+fn get_sca_pool_price(deps: Deps) -> Result<ReserveResponse, ContractError> {
+    let asset = get_asset(deps.storage);
+
+    let query_msg = PoolQueryMsg::GetReserves {  };
+
+    let query_response: ReserveResponse =
+      deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+         contract_addr: asset.pair,
+         msg: to_binary(&query_msg)?,
+    }))?;
+    
+    Ok(query_response)
+}
