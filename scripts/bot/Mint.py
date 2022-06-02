@@ -3,11 +3,12 @@ from bot.Bot import Bot
 
 class Mint(Bot):
     ## for simplicity, decimal = 6
-    def __init__(self, network_type, deployer_key) -> None:
+    def __init__(self, network_type, deployer_key, controller) -> None:
         super().__init__(network_type, deployer_key)
         self.token_code_id = self.store_contract("mint")
 
         self.contract_addr = self.instantiate_contract(self.token_code_id, {
+            "controller": controller
         })
 
 
@@ -23,7 +24,7 @@ class Mint(Bot):
         )
 
     def get_position(self, user):
-        self.query_contract(
+        return self.query_contract(
             self.contract_addr,
             {
                 "get_position": {
@@ -43,7 +44,7 @@ class Mint(Bot):
         )
 
     
-    def get_sca_pool_price(self):
+    def get_sca_pool_reserves(self):
         self.query_contract(
             self.contract_addr,
             {
@@ -96,6 +97,15 @@ class Mint(Bot):
                 "close_position":{
                     "sca_amount": sca_amount
                 }
+            }
+        )
+
+    def mass_update(self, sender):
+        self.execute_contract(
+            sender,
+            self.contract_addr,
+            {
+                "mass_update":{}
             }
         )
 

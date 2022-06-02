@@ -42,7 +42,7 @@ class Token(Bot):
 
     
     def get_balance(self, user):
-        self.query_contract(
+        return self.query_contract(
             self.contract_addr,
             {
                 "balance": {

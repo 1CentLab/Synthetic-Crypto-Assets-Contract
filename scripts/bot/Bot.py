@@ -29,7 +29,7 @@ class Bot:
         pass 
     
     def choose_network(self, network_type, menmonic_key) -> None:
-        config = os.path.abspath("scripts/bot/network.json")
+        config = os.path.abspath("scripts/data/network.json")
         config_data = json.load(open(config))
 
         for nt in config_data:            

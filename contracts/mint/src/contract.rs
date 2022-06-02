@@ -77,6 +77,10 @@ pub fn try_mass_update(deps:DepsMut, env: Env, _info: MessageInfo) -> Result<Res
 
     //transfer liquidated amount to controller contract
     let mut messages: Vec<CosmosMsg> = vec![];
+
+    if liquidated_collateral == Uint128::new(0) {
+        return Ok(Response::new().add_attribute("method", "try_mass_update"))
+    }
     messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
         contract_addr: asset.collateral,
         msg: to_binary(&Cw20ExecuteMsg::Transfer{
@@ -87,7 +91,7 @@ pub fn try_mass_update(deps:DepsMut, env: Env, _info: MessageInfo) -> Result<Res
     }));
 
     Ok(Response::new().add_messages(messages).add_attributes(vec![
-        ("Method", "try_mass_update")
+        ("method", "try_mass_update")
     ]))
 }
 
@@ -108,7 +112,7 @@ pub fn try_open_position(deps: DepsMut, env: Env, info: MessageInfo, collateral_
     }
 
     let sca_price = query_sca_oracle_price(deps.as_ref());
-    let sca_amount = collateral_amount * asset.multiplier / ratio * sca_price.price / sca_price.multiplier; // collateral / (ratio * sca_price/usd)
+    let sca_amount = collateral_amount * asset.multiplier / ratio * sca_price.multiplier/sca_price.price; // collateral / (ratio * sca_price/usd)
 
     //transfer amount of collateral to contract 
     let mut messages: Vec<CosmosMsg> = vec![];

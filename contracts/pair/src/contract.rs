@@ -94,7 +94,7 @@ pub fn try_add_liquid(deps: DepsMut, info: MessageInfo, env: Env, amount0: Uint1
     }));
 
     //calculate how much user contribute to the pool
-    let multiplier = Uint128::new(10000000000);
+    let multiplier = Uint128::new(1000000);
     let (reserve0, reserve1) = get_reserves(deps.storage);
 
     let mut percent = multiplier;
@@ -112,7 +112,7 @@ pub fn try_add_liquid(deps: DepsMut, info: MessageInfo, env: Env, amount0: Uint1
     // mint LP_token for provider
     let (_, mut total_supply, _) = query_lp_token_info(deps.as_ref(), info.sender.to_string().clone());
     if total_supply == Uint128::new(0){
-        total_supply = Uint128::new(100);
+        total_supply = Uint128::new(1000000);
     }
 
     let lp_amount = percent * total_supply / multiplier;

@@ -5,8 +5,11 @@ use cw2::set_contract_version;
 use cw20::{Cw20ReceiveMsg, Cw20ExecuteMsg};
 
 use crate::error::ContractError;
-use sca::controller::{ExecuteMsg, InstantiateMsg, QueryMsg};
-use crate::state::{State, STATE};
+use sca::{controller::{ExecuteMsg, InstantiateMsg, QueryMsg}, mint::Asset};
+use crate::state::{
+    State, STATE,
+    get_asset, set_asset
+};
 
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:controller";
@@ -40,8 +43,17 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::Receive(message) => cw20_receiver_handler(deps, _env, info, message),
+        ExecuteMsg::AddAsset { asset } => try_add_asset(deps, asset)
     }
 }
+
+fn try_add_asset(deps:DepsMut, asset: Asset) -> Result<Response, ContractError>{
+    set_asset(deps.storage, asset)?;
+
+    Ok(Response::new()
+    .add_attribute("method", "add_asset"))
+}
+
 fn cw20_receiver_handler(deps: DepsMut, _env: Env, info: MessageInfo, message: Cw20ReceiveMsg)-> Result<Response, ContractError> {
     Ok(Response::new()
     .add_attribute("method", "instantiate")
@@ -55,3 +67,6 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         
     }
 }
+
+
+
