@@ -9,6 +9,29 @@ class Controller(Bot):
 
         self.contract_addr = self.instantiate_contract(self.token_code_id, {
         })
+        self.phrase = "CONTROLLER"
 
+
+    ### QUERY ### 
+    def get_state(self):
+        self.query_contract(
+            self.contract_addr,
+            {
+                "get_state": {}
+            }
+        )
+
+    def test(self):
+        self.query_contract(
+            self.contract_addr,
+            {
+                "test": {
+                
+                }
+            }
+        )
+
+    ### EXECUTE #### 
+    
     def __repr__(self) -> str:
         return self.contract_addr

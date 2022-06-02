@@ -1,4 +1,3 @@
-use cosmwasm_std::Uint128;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use cw20::Cw20ReceiveMsg;
@@ -22,6 +21,7 @@ pub enum ExecuteMsg {
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
     // GetCount returns the current count as a json-encoded number
-   
+   GetState {},
+   Test {}
 }
 

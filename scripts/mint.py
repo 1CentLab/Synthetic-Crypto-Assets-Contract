@@ -80,3 +80,4 @@ mint.get_position(user2.key.acc_address)
 mint.get_position(deployer.key.acc_address)
 usd.get_balance(repr(controller))
 
+controller.get_state()

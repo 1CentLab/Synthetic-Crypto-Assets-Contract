@@ -8,7 +8,8 @@ use crate::error::ContractError;
 use sca::{controller::{ExecuteMsg, InstantiateMsg, QueryMsg}, mint::Asset};
 use crate::state::{
     State, STATE,
-    get_asset, set_asset
+    get_asset, set_asset,
+    get_state, set_state
 };
 
 // version info for migration info
@@ -55,18 +56,30 @@ fn try_add_asset(deps:DepsMut, asset: Asset) -> Result<Response, ContractError>{
 }
 
 fn cw20_receiver_handler(deps: DepsMut, _env: Env, info: MessageInfo, message: Cw20ReceiveMsg)-> Result<Response, ContractError> {
+   let mut state = get_state(deps.storage);
+   state.reserve = state.reserve + message.amount;
+
+   set_state(deps.storage, state)?;
+
     Ok(Response::new()
-    .add_attribute("method", "instantiate")
-    .add_attribute("owner", info.sender)
-)
+    .add_attribute("method", "receiver")
+    )
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        
+        QueryMsg::GetState{} => to_binary(&query_state(deps)),
+        QueryMsg::Test{} => to_binary(&query_asset(deps))
     }
+}
+
+fn query_state(deps: Deps) -> State {
+    get_state(deps.storage)
 }
 
 
 
+fn query_asset(deps: Deps) -> String {
+    String::from("ABCD")
+}

@@ -3,7 +3,7 @@ use cosmwasm_std::entry_point;
 use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128,WasmMsg, QueryRequest, WasmQuery, CosmosMsg};
 use cw2::set_contract_version;
 use cw20::{Cw20ExecuteMsg};
-
+use std::str;
 use crate::error::ContractError;
 use sca::mint::{Asset, ExecuteMsg, InstantiateMsg, QueryMsg};
 use sca::pair::{QueryMsg as PoolQueryMsg, ReserveResponse};
@@ -81,11 +81,13 @@ pub fn try_mass_update(deps:DepsMut, env: Env, _info: MessageInfo) -> Result<Res
     if liquidated_collateral == Uint128::new(0) {
         return Ok(Response::new().add_attribute("method", "try_mass_update"))
     }
+
     messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
         contract_addr: asset.collateral,
-        msg: to_binary(&Cw20ExecuteMsg::Transfer{
-            recipient: CONTROLLER.load(deps.storage)?,
-            amount: liquidated_collateral
+        msg: to_binary(&Cw20ExecuteMsg::Send{
+            contract: CONTROLLER.load(deps.storage)?,
+            amount: liquidated_collateral,
+            msg: Binary::from_base64("")?
         })?,
         funds: vec![],
     }));

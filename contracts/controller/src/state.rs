@@ -23,5 +23,15 @@ pub fn set_asset(storage: &mut dyn Storage, asset: Asset) ->  StdResult<()>{
 }
 
 
+pub fn get_state(storage: &dyn Storage) -> State {
+    STATE.load(storage).unwrap()
+}
+
+
+pub fn set_state(storage: &mut dyn Storage, state: State) ->  StdResult<()>{
+    STATE.save(storage, &state)
+}
+
+
 pub const STATE: Item<State> = Item::new("state");
 pub const ASSET: Item<Asset> = Item::new("asset");
