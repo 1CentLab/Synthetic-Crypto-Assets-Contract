@@ -1,4 +1,4 @@
-from bot.Bot import Bot
+from .Bot import Bot
 
 
 class Mint(Bot):

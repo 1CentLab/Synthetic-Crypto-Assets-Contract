@@ -1,5 +1,5 @@
 from re import L
-from bot.Bot import Bot
+from .Bot import Bot
 
 
 class Token(Bot):
