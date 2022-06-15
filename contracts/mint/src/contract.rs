@@ -11,7 +11,7 @@ use sca::oracle::{QueryMsg as OracleQueryMsg, ScaPriceResponse};
 use crate::state::{
     CONTROLLER,
     set_asset, get_asset, 
-    get_position, set_position, Position, get_all_positions,
+    get_position, set_position, Position,
     ClosedPosition, set_closed_position, remove_position
 };
 
@@ -46,56 +46,56 @@ pub fn execute(
         ExecuteMsg::SetAsset { asset } => try_set_asset(deps, asset),
         ExecuteMsg::OpenPosition {collateral_amount, ratio} => try_open_position(deps, _env, info, collateral_amount, ratio),
         ExecuteMsg::ClosePosition { sca_amount } => try_close_position(deps, _env, info, sca_amount),
-        ExecuteMsg::MassUpdate {  } => try_mass_update(deps, _env, info)
+        // ExecuteMsg::MassUpdate {  } => try_mass_update(deps, _env, info)
      }
 }
 
-pub fn try_mass_update(deps:DepsMut, env: Env, _info: MessageInfo) -> Result<Response, ContractError> {
-    //get all position 
-    let positions = get_all_positions(deps.storage);
-    let asset = get_asset(deps.storage);
+// pub fn try_mass_update(deps:DepsMut, env: Env, _info: MessageInfo) -> Result<Response, ContractError> {
+//     //get all position 
+//     let positions = get_all_positions(deps.storage);
+//     let asset = get_asset(deps.storage);
 
-    let mut liquidated_collateral = Uint128::new(0);
-    for p_user in positions{
-        let position = update_position(deps.as_ref(), p_user.clone(), &asset);
-        if position.is_liquidated {
-            liquidated_collateral = liquidated_collateral + position.size;
+//     let mut liquidated_collateral = Uint128::new(0);
+//     for p_user in positions{
+//         let position = update_position(deps.as_ref(), p_user.clone(), &asset);
+//         if position.is_liquidated {
+//             liquidated_collateral = liquidated_collateral + position.size;
             
-            // update closed position
-            let closed_position = ClosedPosition{
-                close_time: env.block.time.seconds(),
-                size: position.size,
-                debt: position.debt,
-                is_liquidated: true
-            };
+//             // update closed position
+//             let closed_position = ClosedPosition{
+//                 close_time: env.block.time.seconds(),
+//                 size: position.size,
+//                 debt: position.debt,
+//                 is_liquidated: true
+//             };
 
-            set_closed_position(deps.storage, p_user.clone(), closed_position)?;
-            remove_position(deps.storage, p_user.clone());
-        }
-        set_position(deps.storage, p_user, position)?;
-    }
+//             set_closed_position(deps.storage, p_user.clone(), closed_position)?;
+//             remove_position(deps.storage, p_user.clone());
+//         }
+//         set_position(deps.storage, p_user, position)?;
+//     }
 
-    //transfer liquidated amount to controller contract
-    let mut messages: Vec<CosmosMsg> = vec![];
+//     //transfer liquidated amount to controller contract
+//     let mut messages: Vec<CosmosMsg> = vec![];
 
-    if liquidated_collateral == Uint128::new(0) {
-        return Ok(Response::new().add_attribute("method", "try_mass_update"))
-    }
+//     if liquidated_collateral == Uint128::new(0) {
+//         return Ok(Response::new().add_attribute("method", "try_mass_update"))
+//     }
 
-    messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
-        contract_addr: asset.collateral,
-        msg: to_binary(&Cw20ExecuteMsg::Send{
-            contract: CONTROLLER.load(deps.storage)?,
-            amount: liquidated_collateral,
-            msg: Binary::from_base64("")?
-        })?,
-        funds: vec![],
-    }));
+//     messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
+//         contract_addr: asset.collateral,
+//         msg: to_binary(&Cw20ExecuteMsg::Send{
+//             contract: CONTROLLER.load(deps.storage)?,
+//             amount: liquidated_collateral,
+//             msg: Binary::from_base64("")?
+//         })?,
+//         funds: vec![],
+//     }));
 
-    Ok(Response::new().add_messages(messages).add_attributes(vec![
-        ("method", "try_mass_update")
-    ]))
-}
+//     Ok(Response::new().add_messages(messages).add_attributes(vec![
+//         ("method", "try_mass_update")
+//     ]))
+// }
 
 
 pub fn try_set_asset(deps: DepsMut, asset: Asset) -> Result<Response, ContractError> {
@@ -230,14 +230,14 @@ pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
         QueryMsg::GetState {} => to_binary(&query_state(deps)),
         QueryMsg::GetScaOraclePrice { } => to_binary(&query_sca_oracle_price(deps)),
         QueryMsg::GetPosition { user } =>  to_binary(&query_position(deps, user)),
-        QueryMsg::GetAllPositions {  } => to_binary(&query_all_position(deps)),
+        // QueryMsg::GetAllPositions {  } => to_binary(&query_all_position(deps)),
         QueryMsg::GetScaPoolReserve{  } => to_binary(&query_sca_pool_price(deps))
     }
 }
 
-fn query_all_position(deps:Deps) -> Vec<String>{
-    get_all_positions(deps.storage)
-}
+// fn query_all_position(deps:Deps) -> Vec<String>{
+//     get_all_positions(deps.storage)
+// }
 
 fn query_state(deps: Deps) -> Asset {
     get_asset(deps.storage)

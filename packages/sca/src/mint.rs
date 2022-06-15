@@ -26,7 +26,7 @@ pub enum QueryMsg {
     GetScaOraclePrice{},
     GetScaPoolReserve{},
     GetPosition {user: String},
-    GetAllPositions{}
+    // GetAllPositions{}
 }
 
 
@@ -48,7 +48,7 @@ pub enum ExecuteMsg {
         sca_amount: Uint128
     },
 
-    //get asset price and perform checking liquidation
-    MassUpdate {
-    }
+    // //get asset price and perform checking liquidation
+    // MassUpdate {
+    // }
 }
