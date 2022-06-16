@@ -31,7 +31,7 @@ class Bot:
         pass 
     
     def choose_network(self, network_type, menmonic_key) -> None:
-        config = os.path.abspath("test/data/network.json")
+        config = os.path.abspath("scripts/data/network.json")
         config_data = json.load(open(config))
 
         for nt in config_data:            
@@ -45,7 +45,7 @@ class Bot:
                     self.isLocalTerra = True
                     return 
                 else:
-                    gas_fee, gas_adjustment= self.get_gas_fee()
+                    gas_fee, gas_adjustment= "0.2uluna", 1.4
                     network = config_data[nt]
                     self.lt = LCDClient(chain_id=network["chainID"], url=network["URL"], gas_prices=gas_fee, gas_adjustment=gas_adjustment)
                     

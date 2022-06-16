@@ -39,17 +39,8 @@ class Bot{
             msgs: [msg],
           });
         const storeCodeTxResult = await this.lcd.tx.broadcast(storeCodeTx);
-        console.log(storeCodeTxResult)
-        
-        // if (isTxError(storeCodeTxResult)) {
-        //     throw new Error(
-        //     `store code failed. code: ${storeCodeTxResult.code}, codespace: ${storeCodeTxResult.codespace}, raw_log: ${storeCodeTxResult.raw_log}`
-        //     );
-        // }
-
-        // const {
-        //     store_code: { code_id },
-        //   } = storeCodeTxResult.logs[0].eventsByType;
+        let code_id = storeCodeTxResult.raw_log
+        console.log(code_id)
     }
 
     getDeployer(){
