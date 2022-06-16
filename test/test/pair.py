@@ -12,6 +12,7 @@ network = "localterra"
 deployer_key = os.environ.get("MNEMONIC_KEY")
 bot = Bot(network, deployer_key)
 deployer = bot.get_deployer()
+print(deployer.key.acc_address)
 user2 = bot.get_lt_wallet("test2")
 
 

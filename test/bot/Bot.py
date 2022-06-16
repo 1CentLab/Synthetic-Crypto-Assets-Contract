@@ -1,6 +1,6 @@
 from terra_sdk.client.localterra import LocalTerra
 from terra_sdk.util.contract import get_code_id, get_contract_address, read_file_as_b64
-from terra_sdk.core.wasm import MsgStoreCode,MsgInstantiateContract, MsgExecuteContract, MsgMigrateContract, MsgMigrateCode
+from terra_sdk.core.wasm import MsgStoreCode,MsgInstantiateContract, MsgExecuteContract, MsgMigrateContract
 from terra_sdk.client.lcd import LCDClient
 from terra_sdk.key.mnemonic import MnemonicKey 
 from terra_sdk.core.coin import Coin
@@ -10,6 +10,8 @@ from terra_sdk.client.lcd.api.tx import CreateTxOptions
 import base64
 from random import randbytes
 import requests
+from terra_sdk.core.wasm.data import AccessConfig, AccessType, AccAddress
+
 
 
 import os, sys
@@ -29,7 +31,7 @@ class Bot:
         pass 
     
     def choose_network(self, network_type, menmonic_key) -> None:
-        config = os.path.abspath("scripts/data/network.json")
+        config = os.path.abspath("test/data/network.json")
         config_data = json.load(open(config))
 
         for nt in config_data:            
@@ -81,35 +83,30 @@ class Bot:
         artifact_path = os.path.abspath("artifacts")
         contract_bytes = read_file_as_b64(f"{artifact_path}/{contract_name}.wasm")
     
-        store_code = MsgStoreCode(self.deployer.key.acc_address, contract_bytes)
-        tx = self.deployer.create_and_sign_tx(
-            options=CreateTxOptions(msgs=[store_code])
+        store_code = MsgStoreCode(
+            sender= self.deployer.key.acc_address,
+            wasm_byte_code= contract_bytes, 
+            instantiate_permission=AccessConfig(permission=AccessType.ACCESS_TYPE_EVERYBODY, address=None)
         )
-
+        
+        tx = self.deployer.create_and_sign_tx(
+            options=CreateTxOptions(
+                msgs=[store_code],
+            )
+        )
         result = self.lt.tx.broadcast(tx)    
     
         code_id = get_code_id(result)
         print(f"New code id is created at: {code_id}")
         return code_id
     
-    def migrate_contract(self, admin, contract, new_code_id, migrate_msg):
-        msg = MsgMigrateContract(
-            admin.key.acc_address,
-            contract,
-            new_code_id,
-            migrate_msg
-        )
-
-        tx = admin.create_and_sign_tx(options=CreateTxOptions(msgs=[msg]))
-        result = self.lt.tx.broadcast(tx)
-        return result
-        
-
+   
     def instantiate_contract(self,code_id, init_msg):
         msg = MsgInstantiateContract(
             self.deployer.key.acc_address,
             self.deployer.key.acc_address,
             code_id,
+            "fake_label",
             init_msg
         )
 

@@ -48,27 +48,25 @@ pub fn set_asset(storage: &mut dyn Storage, asset: Asset) ->  StdResult<()>{
     ASSET.save(storage, &asset)
 }
 
-// pub fn get_all_positions(storage: &dyn Storage) -> Vec<String>{
-//     let mut vec = Vec::new();
+pub fn get_all_positions(storage: &dyn Storage) -> Vec<String>{
+    let mut vec = Vec::new();
 
-//     let data: StdResult<Vec<(Vec<u8>,Position)>>  = POSITION
-//         .range(storage, Option::None, Option::None, Order::Ascending)
-//         .collect();
+    let data: StdResult<Vec<(String,Position)>>  = POSITION
+        .range(storage, Option::None, Option::None, Order::Ascending)
+        .collect();
 
-//     match data{
-//         Ok(positions)=>{
-//             for position in positions.iter(){
-//                 let string_value = String::from_utf8(position.0.clone());
-//                 match string_value {
-//                     Ok(s)=> vec.push(s.parse::<String>().unwrap()),
-//                     Err(_)=> continue
-//                 }
-//             }
-//             vec
-//         }
-//         Err(_) => vec,
-//         } 
-// } 
+    match data{
+        Ok(positions)=>{
+            for position in positions.iter(){
+                let string_value = position.0.clone();
+                vec.push(string_value);
+                
+            }
+            vec
+        }
+        Err(_) => vec,
+    } 
+} 
 
 
 pub fn get_position(storage: &dyn Storage, user: String) -> Position {

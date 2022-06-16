@@ -1,5 +1,5 @@
 from setuptools import setup, find_packages
 setup(
-    name = 'scripts',
+    name = 'test',
     packages = find_packages(),
 )
