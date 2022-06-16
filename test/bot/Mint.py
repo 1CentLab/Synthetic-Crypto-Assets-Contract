@@ -20,7 +20,8 @@ class Mint(Bot):
             self.contract_addr,
             {
                 "get_sca_oracle_price": {}
-            }
+            },
+            additional_msg="ORACLE_PRICE"
         )
 
     def get_position(self, user):
@@ -30,7 +31,8 @@ class Mint(Bot):
                 "get_position": {
                     "user": user
                 }
-            }
+            },
+            additional_msg="POSITION"
         )
 
     def get_all_positions(self):
@@ -40,7 +42,8 @@ class Mint(Bot):
                 "get_all_positions": {
     
                 }
-            }
+            },
+            additional_msg="ALL_POSITION"
         )
 
     
@@ -51,7 +54,8 @@ class Mint(Bot):
                 "get_sca_pool_reserve": {
 
                 }
-            }
+            },
+            additional_msg="POOL_RESERVE"
         )
 
 

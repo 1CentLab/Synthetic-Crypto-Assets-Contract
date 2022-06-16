@@ -1,9 +1,9 @@
-from bot.Bot import Bot
-from bot.Oracle import Oracle
-from bot.Token import Token
-from bot.Pair import Pair
-from bot.Mint import Mint
-from bot.Controller import Controller
+from .bot.Bot import Bot
+from .bot.Oracle import Oracle
+from .bot.Token import Token
+from .bot.Pair import Pair
+from .bot.Mint import Mint
+from .bot.Controller import Controller
 from terra_sdk.client.lcd import LCDClient
 from dotenv import load_dotenv
 import os
@@ -37,16 +37,14 @@ pair = Pair(network, deployer_key, repr(sca), repr(usd), "50")
 llp = Token(network, deployer_key, "LLP", [], repr(pair))
 pair.set_lp_token(repr(llp))
 
-print("\n============> SETTING MINTERS =================>")
+print("\n============> SETTING ASSET MINTERS =================>")
 mint.set_asset(deployer, repr(oracle), repr(pair), repr(sca), repr(usd), "1500000", "1000000")
-
 
 print("\n============> DEPLOYER MINT NEW GOLD  =================>")
 usd.increase_allowance(deployer, repr(mint), "4000000")
 mint.open_position(deployer, "1000000", "4000000")  ## open 1000$ position, ratio: 400%
 sca.get_balance(deployer.key.acc_address)
 position0=mint.get_position(deployer.key.acc_address)
-
 
 print("\n============> DEPLOYER PROVIDE LIQUIDITY  =================>")
 sca.increase_allowance(deployer, repr(pair), position0['debt'])

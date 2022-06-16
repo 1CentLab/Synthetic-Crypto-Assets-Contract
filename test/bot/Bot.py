@@ -118,7 +118,7 @@ class Bot:
         return contract_address
 
 
-    def execute_contract(self, sender, contract_addr, exe_msg, coins=None):
+    def execute_contract(self, sender, contract_addr, exe_msg, coins=None, additional_msg=None):
         status = True
         if not coins:
             msg = MsgExecuteContract(
@@ -141,7 +141,10 @@ class Bot:
             print('** ERROR: ', result.raw_log.split("message index: 0:")[1].split(": execute wasm contract failed")[0], '\n')
             return result, False
         else:
-            print(f"EXECUTE: succeeded: {exe_msg} \n -----------------------------\n")
+            if additional_msg:
+                print(f"{additional_msg}: EXECUTE: succeeded: {exe_msg} \n -----------------------------\n")
+            else:
+                print(f"EXECUTE: succeeded: {exe_msg} \n -----------------------------\n")
         return result, status
 
     def query_contract(self, contract_addr, msg, additional_msg=None):

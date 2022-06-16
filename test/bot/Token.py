@@ -7,6 +7,7 @@ class Token(Bot):
     def __init__(self, network_type, deployer_key, symbol, initial_balances, minter) -> None:
         super().__init__(network_type, deployer_key)
         self.token_code_id = self.store_contract("terraswap_token")
+        self.symbol = symbol
 
         initial_balances_data = []
         for user in initial_balances:
@@ -37,7 +38,8 @@ class Token(Bot):
                     "spender": spender,
                     "amount": amount
                 }
-            }
+            },
+            additional_msg = self.symbol
         )
 
     
@@ -48,7 +50,8 @@ class Token(Bot):
                 "balance": {
                     "address": user
                 }
-            }
+            },
+            additional_msg= self.symbol
         )
 
     def __repr__(self) -> str:
