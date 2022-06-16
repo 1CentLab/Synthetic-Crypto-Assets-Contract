@@ -18,5 +18,9 @@ pub enum ContractError {
     OverPaid,
 
     #[error("InvalidAmount")]
-    InvalidAmount
+    InvalidAmount,
+
+    #[error("LiquidatedPosition")]
+    LiquidatedPosition,
+    
 }

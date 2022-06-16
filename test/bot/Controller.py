@@ -18,7 +18,8 @@ class Controller(Bot):
             self.contract_addr,
             {
                 "get_state": {}
-            }
+            },
+            additional_msg=self.phrase
         )
 
     def test(self):

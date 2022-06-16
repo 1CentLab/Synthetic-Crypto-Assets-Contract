@@ -42,7 +42,7 @@ mint.set_asset(deployer, repr(oracle), repr(pair), repr(sca), repr(usd), "150000
 
 print("\n============> DEPLOYER MINT NEW GOLD  =================>")
 usd.increase_allowance(deployer, repr(mint), "4000000")
-mint.open_position(deployer, "1000000", "4000000")  ## open 1000$ position, ratio: 400%
+mint.open_position(deployer, "1000000", "2000000")  ## open 1000$ position, ratio: 400%
 sca.get_balance(deployer.key.acc_address)
 position0=mint.get_position(deployer.key.acc_address)
 
@@ -53,7 +53,7 @@ pair.add_liquid(deployer, position0['debt'], str(int(position0['debt'])* 2))
 
 print("\n============> USER 2 MINT NEW GOLD  =================>")
 usd.increase_allowance(user2, repr(mint), "1000")
-mint.open_position(user2, "1000", "2000000")  ## open 1000$ position, ratio: 200%
+mint.open_position(user2, "1000", "4000000")  ## open 1000$ position, ratio: 200%
 sca.get_balance(user2.key.acc_address)
 position2=mint.get_position(user2.key.acc_address)
 
@@ -76,6 +76,16 @@ oracle.set_price(deployer, repr(sca), "6000000")
 mint.mass_update(deployer)
 mint.get_position(user2.key.acc_address)
 mint.get_position(deployer.key.acc_address)
-usd.get_balance(repr(controller))
 
+print("\n============> DEPLOYER POSITION HAS LIQUIDATED =================>")
+usd.get_balance(repr(controller))
 controller.get_state()
+
+
+print("\n============> DEPLOYER MANUALLY CLOSE POSITION =================>")
+sca.increase_allowance(user2, repr(mint), position2["debt"])
+mint.close_position(user2, str(int(int(position2["debt"])/ 5)))
+sca.get_balance(user2.key.acc_address)
+controller.get_state()
+mint.get_position(user2.key.acc_address)
+mint.get_position(deployer.key.acc_address)
