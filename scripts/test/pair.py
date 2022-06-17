@@ -27,8 +27,6 @@ pair.set_lp_token(repr(lp))
 print("\n ==> provide liquidity ")
 usd.increase_allowance(deployer, repr(pair), "1000")
 sca.increase_allowance(deployer, repr(pair), "1000")
-
-# provide liquidiy 
 pair.add_liquid(deployer, "100", "100")
 pair.get_lp_token_info(deployer.key.acc_address)
 

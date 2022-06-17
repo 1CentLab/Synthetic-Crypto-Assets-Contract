@@ -15,6 +15,11 @@ This SCA - Synthetic Crypto Assets is a project that aim to mirror the price of 
  - Mint: Contract that handle the process of minting new SCA, liquidate collateral 
  - Controller: contract gather collateral from pool, liquidated events  and perform auctions... 
 
+ ## Folder structure 
+ - Contracts + packages: Smart contract and its packages 
+ - Scripts: Deploy + test scripts
+ - Scripts/ data /deployed: Data deployed 
+
 ## Todo 
 
 - Recheck the pair logic  + withdrawal 
