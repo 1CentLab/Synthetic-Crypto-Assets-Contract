@@ -2,14 +2,13 @@
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, from_binary};
 use cw2::set_contract_version;
-use cw20::{Cw20ReceiveMsg, Cw20ExecuteMsg};
+use cw20::{Cw20ReceiveMsg};
 
 use crate::error::ContractError;
-use sca::{controller::{ExecuteMsg, InstantiateMsg, QueryMsg}, mint::Asset};
+use sca::{controller::{ExecuteMsg, InstantiateMsg, QueryMsg}, mint::{Asset, LiquidatedMessage}};
 use crate::state::{
-    State, STATE,
-    get_asset, set_asset,
-    get_state, set_state
+    AssetState,
+    get_asset_state, set_asset_state
 };
 
 // version info for migration info
@@ -21,13 +20,10 @@ pub fn instantiate(
     deps: DepsMut,
     _env: Env,
     info: MessageInfo,
-    msg: InstantiateMsg,
+    _msg: InstantiateMsg,
 ) -> Result<Response, ContractError> {
-    let state = State {
-        reserve: Uint128::new(0)
-    };
+   
     set_contract_version(deps.storage, CONTRACT_NAME, CONTRACT_VERSION)?;
-    STATE.save(deps.storage, &state)?;
 
     Ok(Response::new()
         .add_attribute("method", "instantiate")
@@ -39,47 +35,55 @@ pub fn instantiate(
 pub fn execute(
     deps: DepsMut,
     _env: Env,
-    info: MessageInfo,
+    _info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Receive(message) => cw20_receiver_handler(deps, _env, info, message),
+        ExecuteMsg::Receive(message) => cw20_receiver_handler(deps, message),
         ExecuteMsg::AddAsset { asset } => try_add_asset(deps, asset)
     }
 }
 
 fn try_add_asset(deps:DepsMut, asset: Asset) -> Result<Response, ContractError>{
-    set_asset(deps.storage, asset)?;
+    let asset_state = AssetState{ 
+        asset: asset,
+        reserve: Uint128::new(0),
+        system_debt: Uint128::new(0)
+    };
+
+    set_asset_state(deps.storage, asset_state)?;
 
     Ok(Response::new()
-    .add_attribute("method", "add_asset"))
+    .add_attribute("method", "add_asset_state"))
 }
 
-fn cw20_receiver_handler(deps: DepsMut, _env: Env, info: MessageInfo, message: Cw20ReceiveMsg)-> Result<Response, ContractError> {
-   let mut state = get_state(deps.storage);
-   state.reserve = state.reserve + message.amount;
+fn cw20_receiver_handler(deps: DepsMut, message: Cw20ReceiveMsg)-> Result<Response, ContractError> {
+   match from_binary(&message.msg) {
+       Ok::<LiquidatedMessage, _> (liq) =>{
+           let asset = liq.asset;
+           let mut asset_state = get_asset_state(deps.storage, asset.sca, asset.collateral);
 
-   set_state(deps.storage, state)?;
+            asset_state.reserve += liq.liquidated_amount;
+            asset_state.system_debt += liq.system_debt;
 
-    Ok(Response::new()
-    .add_attribute("method", "receiver")
-    )
+            set_asset_state(deps.storage, asset_state)?;
+            Ok(Response::new()
+            .add_attribute("method", "receiver")
+            )
+       }
+       Err(_) => return Err(ContractError::Cw20ReceiveError {})
+   }
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
-        QueryMsg::GetState{} => to_binary(&query_state(deps)),
-        QueryMsg::Test{} => to_binary(&query_asset(deps))
+        QueryMsg::GetAssetState{sca, collateral} => to_binary(&query_asset_state(deps, sca, collateral)),
     }
 }
 
-fn query_state(deps: Deps) -> State {
-    get_state(deps.storage)
+
+fn query_asset_state(deps: Deps, sca: String, collateral: String) -> AssetState {
+    get_asset_state(deps.storage, sca, collateral)
 }
 
-
-
-fn query_asset(deps: Deps) -> String {
-    String::from("ABCD")
-}

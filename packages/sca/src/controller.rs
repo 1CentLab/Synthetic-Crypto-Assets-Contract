@@ -21,7 +21,6 @@ pub enum ExecuteMsg {
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
     // GetCount returns the current count as a json-encoded number
-   GetState {},
-   Test {}
+   GetAssetState {sca:String, collateral: String},
 }
 

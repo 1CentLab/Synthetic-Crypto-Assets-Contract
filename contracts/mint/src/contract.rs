@@ -249,6 +249,7 @@ fn update_position(deps: Deps, p_user: String, asset: &Asset) -> Position{
     }
     else{
         position.unrealized_liquidated_amount = position.size;
+        position.unrealized_system_debt = position.debt;
         position.size = Uint128::new(0);
     }
 

@@ -12,12 +12,26 @@ class Controller(Bot):
         self.phrase = "CONTROLLER"
 
 
+    def add_asset(self,sender, asset): 
+        self.execute_contract(
+            sender,
+            self.contract_addr,
+            {
+                "add_asset": {
+                    "asset": asset
+                }
+            },
+        )
+
     ### QUERY ### 
-    def get_state(self):
+    def get_asset_state(self, sca, collateral):
         self.query_contract(
             self.contract_addr,
             {
-                "get_state": {}
+                "get_asset_state": {
+                    "sca": sca,
+                    "collateral": collateral
+                }
             },
             additional_msg=self.phrase
         )
