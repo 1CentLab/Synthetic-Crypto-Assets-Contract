@@ -43,9 +43,12 @@ pub enum ExecuteMsg {
 #[serde(rename_all = "snake_case")]
 pub enum QueryMsg {
     // GetCount returns the current count as a json-encoded number
-
     GetLpTokenInfo {user: String},
-    GetReserves {},
+    
+    //prices 
+    GetReserves {}, 
+
+    //minimum received 
     GetAmountsOut {amount_in: Uint128, path: Vec<String>}
 }
 

@@ -1,6 +1,6 @@
-from .bot.Bot import Bot
-from .bot.Oracle import Oracle
-from .bot.Token import Token
+from ..bot.Bot import Bot
+from ..bot.Oracle import Oracle
+from ..bot.Token import Token
 from terra_sdk.client.lcd import LCDClient
 from dotenv import load_dotenv
 import os

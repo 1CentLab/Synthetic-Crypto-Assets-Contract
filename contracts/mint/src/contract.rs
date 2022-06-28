@@ -5,7 +5,7 @@ use cw2::set_contract_version;
 use cw20::{Cw20ExecuteMsg};
 use std::str;
 use crate::error::ContractError;
-use sca::mint::{Asset, ExecuteMsg, InstantiateMsg, QueryMsg};
+use sca::mint::{Asset, LiquidatedMessage, ExecuteMsg, InstantiateMsg, QueryMsg};
 use sca::pair::{QueryMsg as PoolQueryMsg, ReserveResponse};
 use sca::oracle::{QueryMsg as OracleQueryMsg, ScaPriceResponse};
 use crate::state::{
@@ -56,11 +56,15 @@ pub fn try_mass_update(deps:DepsMut, env: Env, _info: MessageInfo) -> Result<Res
     let asset = get_asset(deps.storage);
 
     let mut liquidated_collateral = Uint128::new(0);
+    let mut system_debt = Uint128::new(0);
     for p_user in positions{
         let position = update_position(deps.as_ref(), p_user.clone(), &asset);
-        if position.is_liquidated {
-            liquidated_collateral = liquidated_collateral + position.size;
-            
+        if position.unrealized_liquidated_amount > Uint128::new(0) {
+            liquidated_collateral += position.unrealized_liquidated_amount;
+            system_debt += position.unrealized_system_debt;
+        }
+
+        if position.is_liquidated {            
             // update closed position
             let closed_position = ClosedPosition{
                 close_time: env.block.time.seconds(),
@@ -82,15 +86,8 @@ pub fn try_mass_update(deps:DepsMut, env: Env, _info: MessageInfo) -> Result<Res
         return Ok(Response::new().add_attribute("method", "try_mass_update"))
     }
 
-    messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
-        contract_addr: asset.collateral,
-        msg: to_binary(&Cw20ExecuteMsg::Send{
-            contract: CONTROLLER.load(deps.storage)?,
-            amount: liquidated_collateral,
-            msg: Binary::from_base64("")?
-        })?,
-        funds: vec![],
-    }));
+    let liq_msg = _get_liquidated_msg(deps.as_ref(), asset, liquidated_collateral, system_debt)?;
+    messages.push(liq_msg);
 
     Ok(Response::new().add_messages(messages).add_attributes(vec![
         ("method", "try_mass_update")
@@ -142,6 +139,8 @@ pub fn try_open_position(deps: DepsMut, env: Env, info: MessageInfo, collateral_
 
     // increase the existing data
     let mut position = get_position(deps.storage,info.sender.to_string().clone());
+    position.initial_size += collateral_amount;
+    position.initial_debt += sca_amount;
     position.size += collateral_amount;
     position.debt += sca_amount;
     position.open_time = env.block.time.seconds();
@@ -167,15 +166,18 @@ pub fn try_close_position(deps: DepsMut, env: Env, info: MessageInfo, sca_amount
     let asset = get_asset(deps.storage);
     position = update_position(deps.as_ref(), info.sender.to_string().clone(), &asset);
 
-    let receive_collateral; let liquidated_collateral;
+    let receive_collateral;
+    let liquidated_collateral;
+    let system_debt;
 
     if position.is_liquidated {
         return Err(ContractError::LiquidatedPosition{});
     }
     else{
         //get the corresponing collateral 
-        receive_collateral = (position.size - position.unrealized_liquidated_amount) * sca_amount / position.debt;
+        receive_collateral = position.size * sca_amount / position.debt;
         liquidated_collateral = position.unrealized_liquidated_amount * sca_amount / position.debt;
+        system_debt = position.unrealized_system_debt * sca_amount / position.debt;
     }
 
     let mut messages: Vec<CosmosMsg> = vec![];
@@ -191,7 +193,7 @@ pub fn try_close_position(deps: DepsMut, env: Env, info: MessageInfo, sca_amount
 
     //burn sca amount from the sender
     messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
-        contract_addr: asset.sca,
+        contract_addr: asset.sca.clone(),
         msg: to_binary(&Cw20ExecuteMsg::BurnFrom{
             owner: info.sender.to_string().clone(),
             amount: sca_amount
@@ -201,21 +203,13 @@ pub fn try_close_position(deps: DepsMut, env: Env, info: MessageInfo, sca_amount
     
     // if liquidated collateral > 0 ==> transfer liquidated collateral to controller
     if liquidated_collateral > Uint128::new(0){
-        messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
-            contract_addr: asset.collateral,
-            msg: to_binary(&Cw20ExecuteMsg::Send{
-                contract: CONTROLLER.load(deps.storage)?,
-                amount: liquidated_collateral,
-                msg: Binary::from_base64("")?
-            })?,
-            funds: vec![],
-        }));
+        let liq_msg = _get_liquidated_msg(deps.as_ref(), asset.clone(), liquidated_collateral, system_debt)?;
+        messages.push(liq_msg);
     }
 
     //update colalteral 
     position.debt = position.debt - sca_amount;
     position.size = position.size - receive_collateral;
-    position.unrealized_liquidated_amount = position.unrealized_liquidated_amount - liquidated_collateral;
 
     if sca_amount == position.debt{
         let closed_position = ClosedPosition{
@@ -241,20 +235,58 @@ fn update_position(deps: Deps, p_user: String, asset: &Asset) -> Position{
     let sca_oracle_price = query_sca_oracle_price(deps);
     let off_chain_value = position.debt * asset.mcr * sca_oracle_price.price / sca_oracle_price.multiplier / asset.multiplier;
 
-    if off_chain_value < position.size || position.is_liquidated == true {
+    if off_chain_value < position.initial_size || position.is_liquidated == true {
         return position;
     }
 
     //amount of collateral amount need to be reduced from the supply
-    let c_amount = off_chain_value - position.size; 
-    position.unrealized_liquidated_amount = c_amount;
+    let liquidated_amount = off_chain_value - position.initial_size; 
+    position.unrealized_liquidated_amount = liquidated_amount;
+    position.unrealized_system_debt = liquidated_amount *  sca_oracle_price.multiplier * asset.multiplier/ (asset.mcr * sca_oracle_price.price); // liquidated_amount / (mcr * price)
+    
+    if position.size > position.unrealized_liquidated_amount {
+        position.size -= position.unrealized_liquidated_amount;
+    }
+    else{
+        position.unrealized_liquidated_amount = position.size;
+        position.size = Uint128::new(0);
+    }
 
-    if position.unrealized_liquidated_amount > position.size {
+    if position.debt > position.unrealized_system_debt {
+        position.debt -= position.unrealized_system_debt;
+    }
+    else{
+        position.unrealized_system_debt = position.debt;
+        position.debt = Uint128::new(0);
+    }
+
+    if position.debt == Uint128::new(0) || position.size == Uint128::new(0) {
         position.is_liquidated = true;
     }
+
     position
 }
 
+fn _get_liquidated_msg(deps: Deps, asset: Asset, liquidated_amount: Uint128, system_debt: Uint128) -> StdResult<CosmosMsg> {
+    let collateral_token = asset.collateral.clone();
+    let liqudated_message = LiquidatedMessage{
+        asset: asset,
+        liquidated_amount: liquidated_amount,
+        system_debt: system_debt
+    };
+
+    let msg = CosmosMsg::Wasm(WasmMsg::Execute {
+        contract_addr: collateral_token,
+        msg: to_binary(&Cw20ExecuteMsg::Send{
+            contract: CONTROLLER.load(deps.storage)?,
+            amount: liquidated_amount,
+            msg: to_binary(&liqudated_message)?
+        })?,
+        funds: vec![],
+    });
+
+    Ok(msg)
+}
 
 
 
