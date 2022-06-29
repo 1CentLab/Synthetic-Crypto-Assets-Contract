@@ -1,8 +1,8 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, from_binary, QueryRequest, WasmQuery, CosmosMsg};
+use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, from_binary, QueryRequest, WasmQuery, CosmosMsg, WasmMsg};
 use cw2::set_contract_version;
-use cw20::{Cw20ReceiveMsg};
+use cw20::{Cw20ReceiveMsg, Cw20ExecuteMsg};
 
 use crate::error::ContractError;
 use sca::{controller::{ExecuteMsg, InstantiateMsg, QueryMsg}, mint::{Asset, LiquidatedMessage}};
@@ -37,12 +37,13 @@ pub fn instantiate(
 pub fn execute(
     deps: DepsMut,
     _env: Env,
-    _info: MessageInfo,
+    info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::Receive(message) => cw20_receiver_handler(deps, message),
-        ExecuteMsg::AddAsset { asset } => try_add_asset(deps, asset)
+        ExecuteMsg::AddAsset { asset } => try_add_asset(deps, asset),
+        ExecuteMsg::BuyAuction { sca, collateral, sca_amount} => buy_auction(deps, info, sca, collateral, sca_amount)
     }
 }
 
@@ -78,9 +79,63 @@ fn cw20_receiver_handler(deps: DepsMut, message: Cw20ReceiveMsg)-> Result<Respon
 }
 
 
-fn buy_auction(deps: Deps, sca: String, collateral: String, sca_amount: Uint128) {
-    let asset = get_asset_state(deps.storage, sca, collateral);
+fn buy_auction(deps: DepsMut, info: MessageInfo, sca: String, collateral: String, sca_amount: Uint128) -> Result<Response, ContractError> {
+    let mut asset_state = get_asset_state(deps.storage, sca, collateral);
+    let asset = asset_state.asset.clone();
 
+    let oracle_price = query_sca_oracle_price(deps.as_ref(), asset.sca.clone(), asset.collateral.clone());
+    let pool_reserves = query_sca_pool_price(deps.as_ref(), asset.sca.clone(),asset.collateral.clone());
+   
+    // if sca < rwa ==> Do auctions. Else: We donot need to do auction (High demand)
+    let rwa_price = pool_reserves.reserve1 * oracle_price.multiplier / pool_reserves.reserve0; // multiplier with oracle price multiplier to handel decimal case 
+    let sca_price = oracle_price.price;
+
+    // premium 
+    if sca_price > rwa_price {
+        return Err(ContractError::InPremium { })
+    }
+    
+    if sca_amount > asset_state.system_debt || sca_amount == Uint128::new(0){
+        return Err(ContractError::InvalidAmount { });
+    }
+
+    // Calculate amount of collateral to pay for user 
+    let expected_offer_collateral = sca_amount * oracle_price.price / oracle_price.multiplier;
+    if expected_offer_collateral > asset_state.reserve {
+        return Err(ContractError::InsufficentReserve {});
+    }
+
+    asset_state.reserve -= expected_offer_collateral;
+    asset_state.system_debt -= sca_amount;
+    set_asset_state(deps.storage, asset_state)?;
+    
+    // ------ do auction at discount 
+    let mut messages: Vec<CosmosMsg> = vec![];
+
+    //burn sca amount from the sender
+    messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
+        contract_addr: asset.sca.clone(),
+        msg: to_binary(&Cw20ExecuteMsg::BurnFrom{
+            owner: info.sender.to_string().clone(),
+            amount: sca_amount
+        })?,
+        funds: vec![],
+    }));
+
+    //transfer expected offer collateral to user 
+    messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
+        contract_addr: asset.collateral.clone(),
+        msg: to_binary(&Cw20ExecuteMsg::Transfer{
+            recipient: info.sender.to_string().clone(),
+            amount: expected_offer_collateral
+        })?,
+        funds: vec![],
+    }));
+
+
+    Ok(Response::new().add_messages(messages).add_attributes(vec![
+        ("Method", "buy_auction")
+    ]))
 
 }
 

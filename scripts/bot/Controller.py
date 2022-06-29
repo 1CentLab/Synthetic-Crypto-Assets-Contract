@@ -22,6 +22,19 @@ class Controller(Bot):
                 }
             },
         )
+    
+    def buy_auction(self, sender, sca, collateral, sca_amount):
+        self.execute_contract(
+            sender,
+            self.contract_addr,
+            {
+                "buy_auction": {
+                    "sca":sca,
+                    "collateral": collateral,
+                    "sca_amount": sca_amount
+                }
+            }
+        )
 
     ### QUERY ### 
     def get_asset_state(self, sca, collateral):

@@ -13,5 +13,13 @@ pub enum ContractError {
 
     #[error("Cw20ReceiveError")]
     Cw20ReceiveError {},
-  
+
+    #[error("InPremium")]
+    InPremium {},
+
+    #[error("InvalidAmount")]
+    InvalidAmount {},
+
+    #[error("InsufficentReserve")]
+    InsufficentReserve {},
 }

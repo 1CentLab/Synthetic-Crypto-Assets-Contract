@@ -82,9 +82,6 @@ mint.get_position(deployer.key.acc_address)
 usd.get_balance(repr(controller))
 controller.get_asset_state(repr(sca), repr(usd))
 
-
-
-
 print("\n============> RWA PRICE INCREASES TO 6 =================>")
 oracle.set_price(deployer, repr(sca), "6000000")
 mint.mass_update(deployer)
@@ -108,5 +105,30 @@ controller.get_asset_state(repr(sca), repr(usd))
 mint.get_position(user2.key.acc_address)
 mint.get_position(deployer.key.acc_address)
 
-controller.get_sca_oracle_price(repr(sca), repr(usd))
-controller.get_sca_pool_reserve(repr(sca), repr(usd))
+
+
+print("\n============> USER2 BUY AUCTION =================>")
+
+pair.get_reserves() # 250000 - 500000 
+usd.increase_allowance(user2, repr(pair),"400000")
+pair.swap(user2, "400000", [repr(usd), repr(sca)])
+pair.get_reserves() # 142046 - 880000 
+
+user2_sca_balance = sca.get_balance(user2.key.acc_address)['balance']
+usd.get_balance(user2.key.acc_address)
+sca.get_balance(deployer.key.acc_address)
+usd.get_balance(deployer.key.acc_address)
+controller.get_asset_state(repr(sca), repr(usd))
+sca.increase_allowance(user2, repr(controller), user2_sca_balance)
+
+sca.get_balance(repr(controller))
+sca.get_balance(user2.key.acc_address)
+usd.get_balance(repr(controller))
+usd.get_balance(user2.key.acc_address)
+controller.buy_auction(user2, repr(sca), repr(usd), user2_sca_balance)
+controller.get_asset_state(repr(sca), repr(usd))
+
+sca.get_balance(repr(controller))
+sca.get_balance(user2.key.acc_address)
+usd.get_balance(repr(controller))
+usd.get_balance(user2.key.acc_address)
