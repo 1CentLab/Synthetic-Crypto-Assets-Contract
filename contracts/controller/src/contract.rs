@@ -1,11 +1,13 @@
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
-use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, from_binary};
+use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdResult, Uint128, from_binary, QueryRequest, WasmQuery, CosmosMsg};
 use cw2::set_contract_version;
 use cw20::{Cw20ReceiveMsg};
 
 use crate::error::ContractError;
 use sca::{controller::{ExecuteMsg, InstantiateMsg, QueryMsg}, mint::{Asset, LiquidatedMessage}};
+use sca::pair::{QueryMsg as PoolQueryMsg, ReserveResponse};
+use sca::oracle::{QueryMsg as OracleQueryMsg, ScaPriceResponse};
 use crate::state::{
     AssetState,
     get_asset_state, set_asset_state
@@ -75,10 +77,20 @@ fn cw20_receiver_handler(deps: DepsMut, message: Cw20ReceiveMsg)-> Result<Respon
    }
 }
 
+
+fn buy_auction(deps: Deps, sca: String, collateral: String, sca_amount: Uint128) {
+    let asset = get_asset_state(deps.storage, sca, collateral);
+
+
+}
+
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps, _env: Env, msg: QueryMsg) -> StdResult<Binary> {
     match msg {
         QueryMsg::GetAssetState{sca, collateral} => to_binary(&query_asset_state(deps, sca, collateral)),
+        QueryMsg::GetScaOraclePrice {sca, collateral } => to_binary(&query_sca_oracle_price(deps, sca, collateral)),
+        QueryMsg::GetScaPoolReserve { sca, collateral} => to_binary(&query_sca_pool_price(deps, sca, collateral))
     }
 }
 
@@ -87,3 +99,54 @@ fn query_asset_state(deps: Deps, sca: String, collateral: String) -> AssetState 
     get_asset_state(deps.storage, sca, collateral)
 }
 
+fn query_sca_oracle_price(deps: Deps, sca: String, collateral: String) -> ScaPriceResponse{
+    let asset = get_asset_state(deps.storage, sca, collateral);
+    let res = get_sca_oracle_price(deps, asset.asset);
+
+    match res {
+        Ok(value) => value,
+        Err(_) => ScaPriceResponse {
+            price: Uint128::new(0),
+            multiplier: Uint128::new(0)
+        }
+    }
+}
+
+fn get_sca_oracle_price(deps: Deps, asset: Asset) -> Result<ScaPriceResponse, ContractError> {
+
+    let query_msg = OracleQueryMsg::GetPrice { sca: asset.sca};
+
+    let query_response: ScaPriceResponse =
+      deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+         contract_addr: asset.oracle,
+         msg: to_binary(&query_msg)?,
+    }))?;
+    
+
+    Ok(query_response)
+}
+
+fn query_sca_pool_price(deps: Deps, sca: String, collateral: String) -> ReserveResponse {
+    let asset_state = get_asset_state(deps.storage, sca, collateral);
+    let res = get_sca_pool_price(deps, asset_state.asset);
+
+    match res {
+        Ok(value) => value ,
+        Err(_) => ReserveResponse{
+            reserve0: Uint128::new(0),
+            reserve1: Uint128::new(1)
+        }
+    }
+}
+
+fn get_sca_pool_price(deps: Deps, asset: Asset) -> Result<ReserveResponse, ContractError> {
+    let query_msg = PoolQueryMsg::GetReserves {  };
+
+    let query_response: ReserveResponse =
+      deps.querier.query(&QueryRequest::Wasm(WasmQuery::Smart {
+         contract_addr: asset.pair,
+         msg: to_binary(&query_msg)?,
+    }))?;
+    
+    Ok(query_response)
+}

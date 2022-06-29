@@ -14,7 +14,7 @@ pub enum ExecuteMsg {
     Receive(Cw20ReceiveMsg),
     AddAsset {
         asset: Asset
-    }
+    },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, JsonSchema)]
@@ -22,5 +22,7 @@ pub enum ExecuteMsg {
 pub enum QueryMsg {
     // GetCount returns the current count as a json-encoded number
    GetAssetState {sca:String, collateral: String},
+   GetScaOraclePrice{sca: String, collateral: String},
+   GetScaPoolReserve{sca: String, collateral: String},
 }
 

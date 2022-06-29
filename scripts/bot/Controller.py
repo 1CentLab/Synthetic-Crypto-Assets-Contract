@@ -45,6 +45,30 @@ class Controller(Bot):
                 }
             }
         )
+    
+    def get_sca_oracle_price(self, sca, collateral):
+        self.query_contract(
+            self.contract_addr,
+            {
+                "get_sca_oracle_price":{
+                    "sca":sca,
+                    "collateral": collateral
+                }
+            },
+            self.phrase
+        )
+    
+    def get_sca_pool_reserve(self, sca, collateral):
+        self.query_contract(
+            self.contract_addr,
+            {
+                "get_sca_pool_reserve":{
+                    "sca":sca,
+                    "collateral": collateral
+                }
+            },
+            self.phrase
+        )
 
     ### EXECUTE #### 
     

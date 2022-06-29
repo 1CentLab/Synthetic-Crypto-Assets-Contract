@@ -107,3 +107,6 @@ sca.get_balance(user2.key.acc_address)
 controller.get_asset_state(repr(sca), repr(usd))
 mint.get_position(user2.key.acc_address)
 mint.get_position(deployer.key.acc_address)
+
+controller.get_sca_oracle_price(repr(sca), repr(usd))
+controller.get_sca_pool_reserve(repr(sca), repr(usd))
