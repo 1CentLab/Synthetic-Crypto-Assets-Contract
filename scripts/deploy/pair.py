@@ -24,11 +24,20 @@ except:
     print("Please setting token first")
     sys.exit()
 
-pair = Pair(network, deployer_key, sca_addr, usd_addr, "30")
-lp = Token(network, deployer_key, "LLP", [(deployer.key.acc_address, "100")], repr(pair))
+try: 
+    pair_addr = deployed_data["pair"]
+    lp_addr = deployed_data["llp"]
+    pair = Pair(network, deployer_key, "", "", "30", pair_addr)
+    lp = Token(network, deployer_key, "LLP", [(deployer.key.acc_address, "100")], repr(pair), lp_addr)
 
-deployed_data["pair"] = repr(pair)
-deployed_data["llp"] = repr(lp)
+except:
+    pair = Pair(network, deployer_key, sca_addr, usd_addr, "30")
+    lp = Token(network, deployer_key, "LLP", [(deployer.key.acc_address, "100")], repr(pair))
+
+    deployed_data["pair"] = repr(pair)
+    deployed_data["llp"] = repr(lp)
+
+pair.set_lp_token(repr(lp))
 
 with open(filepath, "w") as outfile:
     json.dump(deployed_data, outfile)

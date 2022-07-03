@@ -3,17 +3,21 @@ from .Bot import Bot
 
 
 class Pair(Bot):
-    def __init__(self, network_type, deployer_key, token0, token1,fee) -> None:
+    def __init__(self, network_type, deployer_key, token0, token1,fee, contract_addr=None) -> None:
         super().__init__(network_type, deployer_key)
-        self.code_id = self.store_contract("pair")
-        self.contract_addr = self.instantiate_contract( 
-            self.code_id,
-            {
-                "token0": token0,
-                "token1": token1,
-                "fee": fee
-            }
-        )
+
+        if contract_addr == None:
+            self.code_id = self.store_contract("pair")
+            self.contract_addr = self.instantiate_contract( 
+                self.code_id,
+                {
+                    "token0": token0,
+                    "token1": token1,
+                    "fee": fee
+                }
+            )
+        else:
+            self.contract_addr = contract_addr
     
 
     def get_lp_token_info(self, user):
