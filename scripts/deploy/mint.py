@@ -6,21 +6,30 @@ from ..bot.Mint import Mint
 from ..bot.Controller import Controller
 from terra_sdk.client.lcd import LCDClient
 from dotenv import load_dotenv
-import os
+import os, sys
 
 load_dotenv() 
-network = "localterra"
+network = "testnet"
 
 deployer_key = os.environ.get("MNEMONIC_KEY")
+
 bot = Bot(network, deployer_key)
 deployer = bot.get_deployer()
-user2 = bot.get_lt_wallet("test2")
+
+#user2 = bot.get_lt_wallet("test2")
 
 
 CONTROLLER_CONTRACT_ADDR = "terra1quthsmpt03f4fa6zu374cvtgxgtmu8wpaawf5l7amdxyqzsz8avqryn0fk"
+MINT_CONTRACT_ADDR= "terra1llwnn473zegsev05xxtn8xqm7tu8xh5h9c9v5eaymda922gwtvvsu7v5v3"
+SCA_CONTRACT_ADDR= "terra15c6l234hj7aram3zjgvxn74f4gyffhz3ms6a966vt68d53kqlcls0ax487"
+USD_CONTRACT_ADDR= "terra1807udrvqapue6p907xwzax9x05lst67w78ph4a234e49nn9u5rksyup45m"
+ORACLE_CONTRACT_ADDR=  "terra1qjp298de4dsplwluzm09zt5s7x09g4m62zp6r4krvsm2h4g8faqspll9cs"
+PAIR_CONTRACT_ADDR = "terra1pq0qk9808f9afdyz8gw6d9e4c552dl0tk5mg5eg4crnvcmmwpnqq3fwtt5"
+LLP_CONTRACT_ADDR = "terra124qf54wktgtv597zy3zlfav4k2jzklhkrxxqzrcfy9tv47x9cp7s3wzu4v"
+
 ######## WORKING FLOW ##############
 print("\n============> INIT CONTROLLER  =================>")
-controller = Controller(network, deployer_key, CONTROLLER_CONTRACT_ADDR)
+controller = Controller(network, deployer_key,CONTROLLER_CONTRACT_ADDR)
 
 
 print("\n============> INIT MINT  =================>")
@@ -28,7 +37,7 @@ mint = Mint(network, deployer_key, repr(controller))
 
 print("\n============> INIT TRADING TOKEN  =================>")
 sca = Token(network, deployer_key, "GOLD", [], repr(mint))
-usd = Token(network, deployer_key, "USD", [(deployer.key.acc_address, "100000000"),(user2.key.acc_address, "100000000")], deployer.key.acc_address)
+usd = Token(network, deployer_key, "USD", [(deployer.key.acc_address, "1000000000000")], deployer.key.acc_address)
 
 print("\n============> INIT ORACLE CONTRACT  =================>")
 oracle = Oracle(network, deployer_key, "1000000")
@@ -54,6 +63,8 @@ controller.add_asset(deployer, asset)
 print("\n============> SETTING ASSET MINTERS =================>")
 mint.set_asset(deployer, repr(oracle), repr(pair), repr(sca), repr(usd), "1500000", "1000000")
 
+
+sys.exit()
 print("\n============> DEPLOYER MINT NEW GOLD  =================>")
 usd.increase_allowance(deployer, repr(mint), "4000000")
 mint.open_position(deployer, "1000000", "2000000")  ## open 1000$ position, ratio: 200%
@@ -65,11 +76,6 @@ sca.increase_allowance(deployer, repr(pair), position0['debt'])
 usd.increase_allowance(deployer, repr(pair), str(int(position0['debt'])* 2))
 pair.add_liquid(deployer, position0['debt'], str(int(position0['debt'])* 2))
 
-print("\n============> USER 2 MINT NEW GOLD  =================>")
-usd.increase_allowance(user2, repr(mint), "1000")
-mint.open_position(user2, "1000", "4000000")  ## open 1000$ position, ratio: 200%
-sca.get_balance(user2.key.acc_address)
-position2=mint.get_position(user2.key.acc_address)
 
 
 print("\n============> RWA PRICE INCREASES TO 3 =================>")

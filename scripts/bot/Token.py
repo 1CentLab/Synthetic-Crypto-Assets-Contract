@@ -29,6 +29,7 @@ class Token(Bot):
                 }
             })
         else: 
+            print(f"** Getting contract at: {contract_addr}")
             self.contract_addr = contract_addr
 
     

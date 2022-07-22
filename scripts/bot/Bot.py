@@ -45,8 +45,9 @@ class Bot:
                     self.isLocalTerra = True
                     return 
                 else:
-                    gas_fee, gas_adjustment= "0.2uluna", 1.4
                     network = config_data[nt]
+                    gas_fee, gas_adjustment= self.get_gas_fee(network["gas_url"])
+
                     self.lt = LCDClient(chain_id=network["chainID"], url=network["URL"], gas_prices=gas_fee, gas_adjustment=gas_adjustment)
                     
                     key = MnemonicKey(mnemonic=menmonic_key)
@@ -58,12 +59,11 @@ class Bot:
         sys.exit()
 
 
-    def get_gas_fee(self):
-        link = "https://fcd.terra.dev/v1/txs/gas_prices"
-       
-        f = requests.get(link)
+    def get_gas_fee(self, gas_url):
+        f = requests.get(gas_url)
         data=  json.loads(f.text)
-        return data["uluna"], 1.4
+       
+        return f"{data['uluna']}uluna", 1.4
 
     def get_deployer(self):
         return self.deployer

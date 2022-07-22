@@ -3,12 +3,18 @@ from .Bot import Bot
 
 class Controller(Bot):
     ## for simplicity, decimal = 6
-    def __init__(self, network_type, deployer_key) -> None:
+    def __init__(self, network_type, deployer_key, contract_addr =None) -> None:
         super().__init__(network_type, deployer_key)
-        self.token_code_id = self.store_contract("controller")
 
-        self.contract_addr = self.instantiate_contract(self.token_code_id, {
-        })
+        if contract_addr == None:
+            self.token_code_id = self.store_contract("controller")
+
+            self.contract_addr = self.instantiate_contract(self.token_code_id, {
+            })
+        else:
+            print(f"** Getting contract at: {contract_addr}")
+            self.contract_addr = contract_addr
+
         self.phrase = "CONTROLLER"
 
 

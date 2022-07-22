@@ -3,13 +3,17 @@ from .Bot import Bot
 
 class Mint(Bot):
     ## for simplicity, decimal = 6
-    def __init__(self, network_type, deployer_key, controller) -> None:
+    def __init__(self, network_type, deployer_key, controller, contract_addr=None) -> None:
         super().__init__(network_type, deployer_key)
-        self.token_code_id = self.store_contract("mint")
+        if contract_addr == None:
+            self.token_code_id = self.store_contract("mint")
 
-        self.contract_addr = self.instantiate_contract(self.token_code_id, {
-            "controller": controller
-        })
+            self.contract_addr = self.instantiate_contract(self.token_code_id, {
+                "controller": controller
+            })
+        else: 
+            print(f"** Getting contract at: {contract_addr}")
+            self.contract_addr = contract_addr
 
 
 
