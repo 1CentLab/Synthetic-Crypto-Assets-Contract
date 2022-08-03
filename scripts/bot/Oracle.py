@@ -34,7 +34,7 @@ class Oracle(Bot):
             self.contract_addr,
             {
                 "get_price": {
-                    "sca": sca
+                    "sca": sca 
                 }
             }
         )

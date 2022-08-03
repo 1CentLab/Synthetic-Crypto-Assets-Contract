@@ -17,10 +17,9 @@ deployer = bot.get_deployer()
 user2 = bot.get_lt_wallet("test2")
 
 
-CONTROLLER_CONTRACT_ADDR = "terra1quthsmpt03f4fa6zu374cvtgxgtmu8wpaawf5l7amdxyqzsz8avqryn0fk"
 ######## WORKING FLOW ##############
 print("\n============> INIT CONTROLLER  =================>")
-controller = Controller(network, deployer_key, CONTROLLER_CONTRACT_ADDR)
+controller = Controller(network, deployer_key)
 
 
 print("\n============> INIT MINT  =================>")
@@ -52,11 +51,13 @@ asset = {
 controller.add_asset(deployer, asset)
 
 print("\n============> SETTING ASSET MINTERS =================>")
-mint.set_asset(deployer, repr(oracle), repr(pair), repr(sca), repr(usd), "1500000", "1000000")
+mint.set_asset(deployer, repr(oracle), repr(pair), repr(sca), repr(usd), "1500000", "1000000") # mcr: 150%:  1 gold (10$) => cap collateral: 15$
+
+
 
 print("\n============> DEPLOYER MINT NEW GOLD  =================>")
 usd.increase_allowance(deployer, repr(mint), "4000000")
-mint.open_position(deployer, "1000000", "2000000")  ## open 1000$ position, ratio: 200%
+mint.open_position(deployer, "1000000", "2000000")  ## open 1000$ position, ratio: 200%. Collateral amount / ratio / oracle_price  (ratio >= 150%)
 sca.get_balance(deployer.key.acc_address)
 position0=mint.get_position(deployer.key.acc_address)
 
