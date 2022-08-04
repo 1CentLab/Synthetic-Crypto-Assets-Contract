@@ -161,6 +161,8 @@ pub fn try_open_position(deps: DepsMut, env: Env, info: MessageInfo, collateral_
     position.size += collateral_amount;
     position.debt += sca_amount;
     position.open_time = env.block.time.seconds();
+    position.entry_price = sca_price.price;
+    position.multiplier = sca_price.multiplier;
     set_position(deps.storage, info.sender.to_string(), position)?;
 
     Ok(Response::new().add_messages(messages).add_attributes(vec![
