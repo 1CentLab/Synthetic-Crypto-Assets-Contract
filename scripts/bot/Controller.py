@@ -16,7 +16,9 @@ class Controller(Bot):
             self.contract_addr = contract_addr
 
         self.phrase = "CONTROLLER"
-
+    
+    def migrate(self, new_code_id, migrate_msg):
+        self.migrate_contract(self.contract_addr, new_code_id, migrate_msg)
 
     def add_asset(self,sender, asset): 
         self.execute_contract(

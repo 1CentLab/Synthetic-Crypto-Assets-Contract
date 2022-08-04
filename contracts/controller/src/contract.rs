@@ -7,7 +7,7 @@ use cw20::{Cw20ReceiveMsg, Cw20ExecuteMsg};
 use crate::error::ContractError;
 use sca::{controller::{ExecuteMsg, InstantiateMsg, QueryMsg}, mint::{Asset, LiquidatedMessage}};
 use sca::pair::{QueryMsg as PoolQueryMsg, ReserveResponse};
-use sca::oracle::{QueryMsg as OracleQueryMsg, ScaPriceResponse};
+use sca::oracle::{QueryMsg as OracleQueryMsg, ScaPriceResponse, MigrateMsg};
 use crate::state::{
     AssetState,
     get_asset_state, set_asset_state
@@ -16,6 +16,13 @@ use crate::state::{
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:controller";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+    Ok(Response::default())
+}
+
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
@@ -68,6 +75,7 @@ fn cw20_receiver_handler(deps: DepsMut, message: Cw20ReceiveMsg)-> Result<Respon
 
             asset_state.reserve += liq.liquidated_amount;
             asset_state.system_debt += liq.system_debt;
+            let abc = liq.unsufficent_amount;
 
             set_asset_state(deps.storage, asset_state)?;
             Ok(Response::new()

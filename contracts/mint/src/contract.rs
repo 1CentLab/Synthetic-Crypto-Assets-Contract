@@ -5,7 +5,7 @@ use cw2::set_contract_version;
 use cw20::{Cw20ExecuteMsg};
 use std::str;
 use crate::error::ContractError;
-use sca::mint::{Asset, LiquidatedMessage, ExecuteMsg, InstantiateMsg, QueryMsg};
+use sca::mint::{Asset, LiquidatedMessage, ExecuteMsg, InstantiateMsg, QueryMsg, MigrateMsg};
 use sca::pair::{QueryMsg as PoolQueryMsg, ReserveResponse};
 use sca::oracle::{QueryMsg as OracleQueryMsg, ScaPriceResponse};
 use crate::state::{
@@ -19,10 +19,10 @@ use crate::state::{
 const CONTRACT_NAME: &str = "crates.io:mint";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
-// #[cfg_attr(not(feature = "library"), entry_point)]
-// pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
-//     Ok(Response::default())
-// }
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+    Ok(Response::default())
+}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(

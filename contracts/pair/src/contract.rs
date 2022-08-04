@@ -4,7 +4,7 @@ use cosmwasm_std::{to_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response,
 use cw2::set_contract_version;
 use cw20::{Cw20ExecuteMsg, Cw20QueryMsg, BalanceResponse, TokenInfoResponse};
 use crate::error::ContractError;
-use sca::pair::{ExecuteMsg, InstantiateMsg, QueryMsg, ReserveResponse};
+use sca::pair::{ExecuteMsg, InstantiateMsg, QueryMsg, ReserveResponse, MigrateMsg};
 use crate::state::{
     State, STATE, Reserve, RESERVES,
     get_tokens, get_lp_token,
@@ -14,6 +14,11 @@ use crate::state::{
 // version info for migration info
 const CONTRACT_NAME: &str = "crates.io:pair";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
+
+#[cfg_attr(not(feature = "library"), entry_point)]
+pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+    Ok(Response::default())
+}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
