@@ -19,6 +19,11 @@ use crate::state::{
 const CONTRACT_NAME: &str = "crates.io:mint";
 const CONTRACT_VERSION: &str = env!("CARGO_PKG_VERSION");
 
+// #[cfg_attr(not(feature = "library"), entry_point)]
+// pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Response> {
+//     Ok(Response::default())
+// }
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,

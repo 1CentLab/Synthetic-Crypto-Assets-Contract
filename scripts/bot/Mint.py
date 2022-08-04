@@ -16,9 +16,10 @@ class Mint(Bot):
             self.contract_addr = contract_addr
 
 
+    def migrate(self, new_code_id, migrate_msg):
+        self.migrate_contract(self.contract_addr, new_code_id, migrate_msg)
 
-
-
+ 
     def get_sca_oracle_price(self):
         self.query_contract(
             self.contract_addr,
@@ -40,7 +41,7 @@ class Mint(Bot):
         )
 
     def get_all_positions(self):
-        self.query_contract(
+        return self.query_contract(
             self.contract_addr,
             {
                 "get_all_positions": {

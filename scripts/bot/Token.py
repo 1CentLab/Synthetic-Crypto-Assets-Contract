@@ -58,5 +58,19 @@ class Token(Bot):
             additional_msg= self.symbol
         )
 
+
+    def mint(self, owner, recipient, amount): 
+        self.execute_contract(
+            owner,
+            self.contract_addr,
+            {
+                "mint": {
+                    "recipient": recipient,
+                    "amount": amount
+                }
+            },
+            additional_msg = self.symbol
+        )
+
     def __repr__(self) -> str:
         return self.contract_addr

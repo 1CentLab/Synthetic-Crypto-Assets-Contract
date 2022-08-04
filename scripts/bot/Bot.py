@@ -117,6 +117,18 @@ class Bot:
         print(f"\n Contract instantiate with init msg: {init_msg} at: ---- {contract_address}\n ========================================\n")
         return contract_address
 
+    def migrate_contract(self, contract, new_code_id, migrate_msg):
+        msg = MsgMigrateContract(
+            self.deployer.key.acc_address,
+            contract,
+            new_code_id,
+            migrate_msg
+        )
+
+        print(msg)
+        tx = self.deployer.create_and_sign_tx(options=CreateTxOptions(msgs=[msg]))
+        result = self.lt.tx.broadcast(tx)
+        return result
 
     def execute_contract(self, sender, contract_addr, exe_msg, coins=None, additional_msg=None):
         status = True
