@@ -46,12 +46,13 @@ asset = {
     "sca": repr(sca),
     "collateral": repr(usd),
     "mcr": "1500000",
-    "multiplier": "1000000"
+    "multiplier": "1000000",
+    "premium_rate": "1000000"
 }
 controller.add_asset(deployer, asset)
 
 print("\n============> SETTING ASSET MINTERS =================>")
-mint.set_asset(deployer, repr(oracle), repr(pair), repr(sca), repr(usd), "1500000", "1000000") # mcr: 150%:  1 gold (10$) => cap collateral: 15$
+mint.set_asset(deployer, asset) # mcr: 150%:  1 gold (10$) => cap collateral: 15$
 
 
 

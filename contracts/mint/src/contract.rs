@@ -57,25 +57,37 @@ pub fn try_mass_update(deps:DepsMut, env: Env, _info: MessageInfo) -> Result<Res
 
     let mut liquidated_collateral = Uint128::new(0);
     let mut system_debt = Uint128::new(0);
+    let mut unsufficent_collateral = Uint128::new(0);
     for p_user in positions{
-        let position = update_position(deps.as_ref(), p_user.clone(), &asset);
-        if position.unrealized_liquidated_amount > Uint128::new(0) {
+        let  position = update_position(deps.as_ref(), p_user.clone(), &asset);
+
+        let unsufficent_amount;
+        if position.unrealized_liquidated_amount > position.size {
+            unsufficent_amount = position.unrealized_liquidated_amount - position.size;
+            liquidated_collateral += position.size;
+            system_debt += position.unrealized_system_debt;
+            unsufficent_collateral += unsufficent_amount;
+        }
+        else if position.unrealized_liquidated_amount > Uint128::new(0) {
             liquidated_collateral += position.unrealized_liquidated_amount;
             system_debt += position.unrealized_system_debt;
         }
-
+        
+        //close if position is being liqudiated 
         if position.is_liquidated {            
             // update closed position
             let closed_position = ClosedPosition{
                 close_time: env.block.time.seconds(),
-                size: position.size,
-                debt: position.debt,
+                size: position.initial_size,
+                debt: position.initial_debt,
                 is_liquidated: true
             };
 
             set_closed_position(deps.storage, p_user.clone(), closed_position)?;
             remove_position(deps.storage, p_user.clone());
         }
+
+
         set_position(deps.storage, p_user, position)?;
     }
 
@@ -86,7 +98,7 @@ pub fn try_mass_update(deps:DepsMut, env: Env, _info: MessageInfo) -> Result<Res
         return Ok(Response::new().add_attribute("method", "try_mass_update"))
     }
 
-    let liq_msg = _get_liquidated_msg(deps.as_ref(), asset, liquidated_collateral, system_debt)?;
+    let liq_msg = _get_liquidated_msg(deps.as_ref(), asset, liquidated_collateral, system_debt, unsufficent_collateral)?;
     messages.push(liq_msg);
 
     Ok(Response::new().add_messages(messages).add_attributes(vec![
@@ -203,7 +215,7 @@ pub fn try_close_position(deps: DepsMut, env: Env, info: MessageInfo, sca_amount
     
     // if liquidated collateral > 0 ==> transfer liquidated collateral to controller
     if liquidated_collateral > Uint128::new(0){
-        let liq_msg = _get_liquidated_msg(deps.as_ref(), asset.clone(), liquidated_collateral, system_debt)?;
+        let liq_msg = _get_liquidated_msg(deps.as_ref(), asset.clone(), liquidated_collateral, system_debt, Uint128::new(0))?;
         messages.push(liq_msg);
     }
 
@@ -214,8 +226,8 @@ pub fn try_close_position(deps: DepsMut, env: Env, info: MessageInfo, sca_amount
     if sca_amount == position.debt{
         let closed_position = ClosedPosition{
             close_time: env.block.time.seconds(),
-            size: position.size,
-            debt: position.debt,
+            size: position.initial_size,
+            debt: position.initial_debt,
             is_liquidated: false
         };
 
@@ -233,47 +245,47 @@ fn update_position(deps: Deps, p_user: String, asset: &Asset) -> Position{
     let mut position = get_position(deps.storage, p_user.clone());
 
     let sca_oracle_price = query_sca_oracle_price(deps);
-    let off_chain_value = position.debt * asset.mcr * sca_oracle_price.price / sca_oracle_price.multiplier / asset.multiplier;
+    let off_chain_value = position.debt * asset.mcr * sca_oracle_price.price / sca_oracle_price.multiplier / asset.multiplier;  // debt * price * MCR 
 
-    if off_chain_value < position.initial_size || position.is_liquidated == true {
+    if off_chain_value < position.size || position.is_liquidated == true {
         return position;
     }
 
-    //amount of collateral amount need to be reduced from the supply
-    let liquidated_amount = off_chain_value - position.initial_size; 
-    position.unrealized_liquidated_amount = liquidated_amount;
-    position.unrealized_system_debt = liquidated_amount *  sca_oracle_price.multiplier * asset.multiplier/ (asset.mcr * sca_oracle_price.price); // liquidated_amount / (mcr * price)
-    
-    if position.size > position.unrealized_liquidated_amount {
-        position.size -= position.unrealized_liquidated_amount;
-    }
-    else{
-        position.unrealized_liquidated_amount = position.size;
-        position.unrealized_system_debt = position.debt;
-        position.size = Uint128::new(0);
-    }
+    let numerator = (off_chain_value - position.size) * asset.multiplier;  // 3.7
+    let denominator=  (asset.mcr * asset.premium_rate - (asset.multiplier * asset.multiplier)) / asset.multiplier;
 
-    if position.debt > position.unrealized_system_debt {
-        position.debt -= position.unrealized_system_debt;
-    }
-    else{
-        position.unrealized_system_debt = position.debt;
-        position.debt = Uint128::new(0);
-    }
+    let liquidated_amount = numerator/denominator;
+    let debt = liquidated_amount * asset.premium_rate /sca_oracle_price.price;   // 3.8
 
-    if position.debt == Uint128::new(0) || position.size == Uint128::new(0) {
+    position.unrealized_liquidated_amount= liquidated_amount;
+    position.unrealized_system_debt = debt;
+
+    if position.unrealized_liquidated_amount >= position.size {
         position.is_liquidated = true;
+
+        position.unrealized_system_debt = position.debt;
+        position.unrealized_liquidated_amount = position.unrealized_system_debt * sca_oracle_price.price * asset.premium_rate / asset.multiplier / sca_oracle_price.multiplier;
+
+        position.size = Uint128::new(0);
+        position.debt = Uint128::new(0);
+
+
+    }
+    else {
+        position.size = position.size - position.unrealized_liquidated_amount;
+        position.debt = position.debt - position.unrealized_system_debt;
     }
 
     position
 }
 
-fn _get_liquidated_msg(deps: Deps, asset: Asset, liquidated_amount: Uint128, system_debt: Uint128) -> StdResult<CosmosMsg> {
+fn _get_liquidated_msg(deps: Deps, asset: Asset, liquidated_amount: Uint128, system_debt: Uint128, unsufficent_collateral: Uint128) -> StdResult<CosmosMsg> {
     let collateral_token = asset.collateral.clone();
     let liqudated_message = LiquidatedMessage{
         asset: asset,
         liquidated_amount: liquidated_amount,
-        system_debt: system_debt
+        system_debt: system_debt,
+        unsufficent_amount: unsufficent_collateral
     };
 
     let msg = CosmosMsg::Wasm(WasmMsg::Execute {

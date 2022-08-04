@@ -8,6 +8,7 @@ pub struct Asset {
     pub pair: String,
     pub sca: String,
     pub collateral: String,
+    pub premium_rate: Uint128,
     pub mcr: Uint128,
     pub multiplier: Uint128
 }
@@ -16,6 +17,7 @@ pub struct Asset {
 pub struct LiquidatedMessage {
     pub asset: Asset,
     pub liquidated_amount: Uint128,
+    pub unsufficent_amount: Uint128,
     pub system_debt: Uint128
 }
 

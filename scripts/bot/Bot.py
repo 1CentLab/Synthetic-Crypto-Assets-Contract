@@ -124,7 +124,7 @@ class Bot:
             msg = MsgExecuteContract(
                 sender.key.acc_address,
                 contract_addr,
-                exe_msg,
+                exe_msg
             )
         else:
             msg = MsgExecuteContract(
@@ -136,7 +136,7 @@ class Bot:
 
         tx = sender.create_and_sign_tx(options=CreateTxOptions(msgs=[msg]))
         result = self.lt.tx.broadcast(tx)
-
+        
         if result.raw_log.__contains__("failed to execute message"):
             print('** ERROR: ', result.raw_log.split("message index: 0:")[1].split(": execute wasm contract failed")[0], '\n')
             return result, False

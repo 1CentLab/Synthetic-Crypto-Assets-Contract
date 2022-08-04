@@ -64,16 +64,7 @@ class Mint(Bot):
 
 
     ### SETTER ######333
-    def set_asset(self, sender, oracle, pair, sca, collateral, mcr, multiplier):
-        asset = {
-            "oracle": oracle,
-            "pair": pair,
-            "sca": sca,
-            "collateral": collateral,
-            "mcr": mcr, 
-            "multiplier": multiplier
-        } 
-
+    def set_asset(self, sender, asset):
         self.execute_contract(
             sender,
             self.contract_addr,

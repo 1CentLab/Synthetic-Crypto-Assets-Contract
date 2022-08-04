@@ -21,6 +21,7 @@ impl AssetState {
             pair: String::new(),
             sca: String::new(),
             collateral: String::new(),
+            premium_rate: Uint128::new(0),
             mcr: Uint128::new(0),
             multiplier:  Uint128::new(0)
         };
