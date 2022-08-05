@@ -17,6 +17,7 @@ pub struct Position {
     pub debt: Uint128,
     pub unrealized_liquidated_amount: Uint128,
     pub unrealized_system_debt: Uint128,
+    pub unrealized_unsuffcient_collateral: Uint128,
     pub is_liquidated: bool
 }
 
@@ -37,7 +38,18 @@ impl ClosedPosition {
 
 impl Position {
     pub fn default() -> Position {
-        Position { open_time: 0,entry_price: Uint128::new(0),multiplier: Uint128::new(0), initial_size: Uint128::new(0), size: Uint128::new(0), initial_debt: Uint128::new(0),debt: Uint128::new(0), unrealized_liquidated_amount: Uint128::new(0),unrealized_system_debt: Uint128::new(0), is_liquidated: false}
+        Position { 
+            open_time: 0,
+            entry_price: Uint128::new(0),
+            multiplier: Uint128::new(0), 
+            initial_size: Uint128::new(0), 
+            size: Uint128::new(0), 
+            initial_debt: Uint128::new(0),
+            debt: Uint128::new(0), 
+            unrealized_liquidated_amount: Uint128::new(0),
+            unrealized_system_debt: Uint128::new(0),
+            unrealized_unsuffcient_collateral: Uint128::new(0),
+            is_liquidated: false}
     }
 }
 

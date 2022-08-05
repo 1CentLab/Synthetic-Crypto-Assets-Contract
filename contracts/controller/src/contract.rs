@@ -23,7 +23,6 @@ pub fn migrate(_deps: DepsMut, _env: Env, _msg: MigrateMsg) -> StdResult<Respons
     Ok(Response::default())
 }
 
-
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
@@ -58,7 +57,8 @@ fn try_add_asset(deps:DepsMut, asset: Asset) -> Result<Response, ContractError>{
     let asset_state = AssetState{ 
         asset: asset,
         reserve: Uint128::new(0),
-        system_debt: Uint128::new(0)
+        system_debt: Uint128::new(0),
+        unsufficent_amount: Uint128::new(0)
     };
 
     set_asset_state(deps.storage, asset_state)?;
@@ -74,15 +74,19 @@ fn cw20_receiver_handler(deps: DepsMut, message: Cw20ReceiveMsg)-> Result<Respon
            let mut asset_state = get_asset_state(deps.storage, asset.sca, asset.collateral);
 
             asset_state.reserve += liq.liquidated_amount;
-            asset_state.system_debt += liq.system_debt;
-            let abc = liq.unsufficent_amount;
+            asset_state.system_debt = asset_state.system_debt + liq.system_debt + liq.unsufficent_amount;
+            asset_state.unsufficent_amount += liq.unsufficent_amount;
 
             set_asset_state(deps.storage, asset_state)?;
             Ok(Response::new()
-            .add_attribute("method", "receiver")
+                .add_attribute("method", "receiver")
+                .add_attribute("origin", "from_mint")
             )
        }
-       Err(_) => return Err(ContractError::Cw20ReceiveError {})
+       Err(_) => Ok(Response::new()
+            .add_attribute("method", "receiver")
+            .add_attribute("origin", "others")
+        )
    }
 }
 
@@ -95,23 +99,24 @@ fn buy_auction(deps: DepsMut, info: MessageInfo, sca: String, collateral: String
     let pool_reserves = query_sca_pool_price(deps.as_ref(), asset.sca.clone(),asset.collateral.clone());
    
     // if sca < rwa ==> Do auctions. Else: We donot need to do auction (High demand)
-    let rwa_price = pool_reserves.reserve1 * oracle_price.multiplier / pool_reserves.reserve0; // multiplier with oracle price multiplier to handel decimal case 
-    let sca_price = oracle_price.price;
+    let on_price = pool_reserves.reserve1 * oracle_price.multiplier / pool_reserves.reserve0; // multiplier with oracle price multiplier to handel decimal case 
+    let off_price = oracle_price.price;
 
     // premium 
-    if sca_price > rwa_price {
+    if on_price > off_price {
         return Err(ContractError::InPremium { })
     }
     
     if sca_amount > asset_state.system_debt || sca_amount == Uint128::new(0){
         return Err(ContractError::InvalidAmount { });
     }
-
     // Calculate amount of collateral to pay for user 
     let expected_offer_collateral = sca_amount * oracle_price.price / oracle_price.multiplier;
     if expected_offer_collateral > asset_state.reserve {
         return Err(ContractError::InsufficentReserve {});
     }
+
+   
 
     asset_state.reserve -= expected_offer_collateral;
     asset_state.system_debt -= sca_amount;

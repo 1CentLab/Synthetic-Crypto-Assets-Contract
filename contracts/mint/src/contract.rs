@@ -65,18 +65,10 @@ pub fn try_mass_update(deps:DepsMut, env: Env, _info: MessageInfo) -> Result<Res
     let mut unsufficent_collateral = Uint128::new(0);
     for p_user in positions{
         let  position = update_position(deps.as_ref(), p_user.clone(), &asset);
-
-        let unsufficent_amount;
-        if position.unrealized_liquidated_amount > position.size {
-            unsufficent_amount = position.unrealized_liquidated_amount - position.size;
-            liquidated_collateral += position.size;
-            system_debt += position.unrealized_system_debt;
-            unsufficent_collateral += unsufficent_amount;
-        }
-        else if position.unrealized_liquidated_amount > Uint128::new(0) {
-            liquidated_collateral += position.unrealized_liquidated_amount;
-            system_debt += position.unrealized_system_debt;
-        }
+        
+        liquidated_collateral += position.unrealized_liquidated_amount;
+        system_debt += position.unrealized_system_debt;
+        unsufficent_collateral += position.unrealized_unsuffcient_collateral;
         
         //close if position is being liqudiated 
         if position.is_liquidated {            
@@ -273,6 +265,10 @@ fn update_position(deps: Deps, p_user: String, asset: &Asset) -> Position{
         position.unrealized_system_debt = position.debt;
         position.unrealized_liquidated_amount = position.unrealized_system_debt * sca_oracle_price.price * asset.premium_rate / asset.multiplier / sca_oracle_price.multiplier;
 
+        position.unrealized_unsuffcient_collateral= position.unrealized_liquidated_amount - position.size;
+        position.unrealized_liquidated_amount = position.size;
+      
+        
         position.size = Uint128::new(0);
         position.debt = Uint128::new(0);
 

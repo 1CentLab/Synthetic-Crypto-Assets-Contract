@@ -10,7 +10,8 @@ use sca::mint::Asset;
 pub struct AssetState {
     pub asset: Asset,
     pub reserve: Uint128,
-    pub system_debt: Uint128
+    pub system_debt: Uint128,
+    pub unsufficent_amount: Uint128
 }
 
 
@@ -26,7 +27,7 @@ impl AssetState {
             multiplier:  Uint128::new(0)
         };
 
-        AssetState { asset:  asset, reserve: Uint128::new(0), system_debt: Uint128::new(0) }
+        AssetState { asset:  asset, reserve: Uint128::new(0), system_debt: Uint128::new(0), unsufficent_amount: Uint128::new(0)}
     }
 }
 
