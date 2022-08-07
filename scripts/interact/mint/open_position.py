@@ -26,8 +26,8 @@ usd = Token(network, deployer_key, None, [], None, USD_CONTRACT_ADDR)
 mint = Mint(network, deployer_key, None, MINT_CONTRACT_ADDR)
 
 
-collateral_amount = "100000000"
-collateral_ratio = "2000000"
+collateral_amount = "100000000000000000000000"
+collateral_ratio = "1500000"
 usd.increase_allowance(deployer, MINT_CONTRACT_ADDR, collateral_amount)
 
 mint.open_position(deployer, collateral_amount, collateral_ratio)

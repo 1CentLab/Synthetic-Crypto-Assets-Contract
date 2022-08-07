@@ -98,25 +98,26 @@ fn buy_auction(deps: DepsMut, info: MessageInfo, sca: String, collateral: String
     let oracle_price = query_sca_oracle_price(deps.as_ref(), asset.sca.clone(), asset.collateral.clone());
     let pool_reserves = query_sca_pool_price(deps.as_ref(), asset.sca.clone(),asset.collateral.clone());
    
-    // if sca < rwa ==> Do auctions. Else: We donot need to do auction (High demand)
     let on_price = pool_reserves.reserve1 * oracle_price.multiplier / pool_reserves.reserve0; // multiplier with oracle price multiplier to handel decimal case 
-    let off_price = oracle_price.price;
-
-    // premium 
-    if on_price > off_price {
-        return Err(ContractError::InPremium { })
-    }
     
+    // let off_price = oracle_price.price;
+
+    // // if on_price < off_price ==> Buy from pool. Else: Do auction  
+    // if on_price < off_price {
+    //     //todo: buy from pool 
+    //     return Err(ContractError::InPremium { })
+    // }
+
+    //Valiate sca_Amount of user's input 
     if sca_amount > asset_state.system_debt || sca_amount == Uint128::new(0){
         return Err(ContractError::InvalidAmount { });
     }
+
     // Calculate amount of collateral to pay for user 
-    let expected_offer_collateral = sca_amount * oracle_price.price / oracle_price.multiplier;
+    let expected_offer_collateral = sca_amount * on_price * asset.premium_rate / asset.multiplier / oracle_price.multiplier;
     if expected_offer_collateral > asset_state.reserve {
         return Err(ContractError::InsufficentReserve {});
     }
-
-   
 
     asset_state.reserve -= expected_offer_collateral;
     asset_state.system_debt -= sca_amount;

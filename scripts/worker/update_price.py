@@ -22,10 +22,14 @@ oracle = Oracle(network, deployer_key, None, ORACLE_CONTRACT_ADDR)
 mint = Mint(network, deployer_key, None, MINT_CONTRACT_ADDR)
 
 
-prices = [165, 172, 163, 185, 190]
+prices = [250, 172, 163, 185, 190]
 multiplier = 1000000
 
 i = 0
+
+
+random = False 
+max_range = 0.5
 while True:
     cprice = prices[i] * multiplier;  
     oracle.set_price(deployer, SCA_CONTRACT_ADDR, str(cprice))

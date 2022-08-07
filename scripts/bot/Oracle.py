@@ -17,7 +17,7 @@ class Oracle(Bot):
 
 
     def set_price(self, sender, sca, price):
-        self.execute_contract(
+        return self.execute_contract(
             sender,
             self.contract_addr,
             {

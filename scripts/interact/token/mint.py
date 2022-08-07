@@ -21,4 +21,4 @@ deployer = bot.get_deployer()
 usd = Token(network, deployer_key, None, [], None, USD_CONTRACT_ADDR)
 
 
-usd.mint(deployer, deployer.key.acc_address, "1000000000")
+usd.mint(deployer, "terra15xhvfmg7ch3qeq5m25thzlhp49zv4552m5hjfg", "100000000000000")

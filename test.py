@@ -1,9 +1,6 @@
-from terra_sdk.client.localterra import LocalTerra
+import random
 
-# Create client to communicate with localterra.
-terra = LocalTerra()
-
-# Initialize preconfigured test wallet.
-wallet = terra.wallets["test1"]
-
-print(wallet.key.acc_address)
+# random integer from 0 to 9
+while True:
+    num1 = random.randint(-50, 50)
+    print(num1)

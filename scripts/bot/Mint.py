@@ -76,6 +76,16 @@ class Mint(Bot):
             }
         )
 
+    def set_controller(self, sender, controller):
+        self.execute_contract(
+            sender,
+            self.contract_addr,
+            {
+                "set_controller":{
+                    "controller": controller
+                }
+            }
+        )
     
     def open_position(self, sender, collateral_amount, ratio):
         self.execute_contract(

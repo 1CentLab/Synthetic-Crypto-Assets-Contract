@@ -78,41 +78,51 @@ pub fn try_add_liquid(deps: DepsMut, info: MessageInfo, env: Env, amount0: Uint1
     let (token0, token1) = get_tokens(deps.storage);
 
     let mut messages: Vec<CosmosMsg> = vec![];
-    messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
-        contract_addr: token0,
-        msg: to_binary(&Cw20ExecuteMsg::TransferFrom{
-            owner: info.sender.to_string(),
-            recipient: env.contract.address.to_string(),
-            amount: amount0
-        })?,
-        funds: vec![],
-    }));
 
-    messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
-        contract_addr: token1,
-        msg: to_binary(&Cw20ExecuteMsg::TransferFrom{
-            owner: info.sender.to_string(),
-            recipient: env.contract.address.to_string(),
-            amount: amount1
-        })?,
-        funds: vec![],
-    }));
+    if amount0 != Uint128::new(0){
+        messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: token0,
+            msg: to_binary(&Cw20ExecuteMsg::TransferFrom{
+                owner: info.sender.to_string(),
+                recipient: env.contract.address.to_string(),
+                amount: amount0
+            })?,
+            funds: vec![],
+        }));
+    }
 
+    if amount1 != Uint128::new(0){
+        messages.push(CosmosMsg::Wasm(WasmMsg::Execute {
+            contract_addr: token1,
+            msg: to_binary(&Cw20ExecuteMsg::TransferFrom{
+                owner: info.sender.to_string(),
+                recipient: env.contract.address.to_string(),
+                amount: amount1
+            })?,
+            funds: vec![],
+        }));
+    }
+    
     //calculate how much user contribute to the pool
     let multiplier = Uint128::new(1000000);
     let (reserve0, reserve1) = get_reserves(deps.storage);
 
-    let mut percent = multiplier;
+    //update reserves
+    set_reserves(deps.storage, reserve0 + amount0, reserve1 + amount1)?;
+
+    //mint lp for provider
+    let mut percent = Uint128::new(0);
     if reserve0 != Uint128::new(0) && reserve1 != Uint128::new(0){
         let percent0 = amount0 * multiplier / reserve0;
         let percent1 = amount1 * multiplier/ reserve1;
         percent = if percent0 < percent1 {percent0} else {percent1};
     }
    
-    //todo:  if percent == 0 => contract error 
-
-    //update reserves
-    set_reserves(deps.storage, reserve0 + amount0, reserve1 + amount1)?;
+    if percent == Uint128::new(0){
+        return Ok(Response::new().add_messages(messages).add_attributes(vec![
+            ("Method", "add_liquidity")
+        ]))
+    }
 
     // mint LP_token for provider
     let (_, mut total_supply, _) = query_lp_token_info(deps.as_ref(), info.sender.to_string().clone());

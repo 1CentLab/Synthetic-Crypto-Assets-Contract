@@ -70,6 +70,10 @@ class Pair(Bot):
             }
         })
     
+    def migrate(self, new_code_id, migrate_msg):
+        self.migrate_contract(self.contract_addr, new_code_id, migrate_msg)
+
+    
 
     def remove_liquid(self, caller, liquid):
         self.execute_contract(caller, self.contract_addr, {

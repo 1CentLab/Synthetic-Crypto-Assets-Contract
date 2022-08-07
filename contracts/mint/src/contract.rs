@@ -49,6 +49,7 @@ pub fn execute(
 ) -> Result<Response, ContractError> {
     match msg {
         ExecuteMsg::SetAsset { asset } => try_set_asset(deps, asset),
+        ExecuteMsg::SetController {controller} => try_set_controller(deps, controller),
         ExecuteMsg::OpenPosition {collateral_amount, ratio} => try_open_position(deps, _env, info, collateral_amount, ratio),
         ExecuteMsg::ClosePosition { sca_amount } => try_close_position(deps, _env, info, sca_amount),
         ExecuteMsg::MassUpdate {  } => try_mass_update(deps, _env, info)
@@ -83,9 +84,9 @@ pub fn try_mass_update(deps:DepsMut, env: Env, _info: MessageInfo) -> Result<Res
             set_closed_position(deps.storage, p_user.clone(), closed_position)?;
             remove_position(deps.storage, p_user.clone());
         }
-
-
-        set_position(deps.storage, p_user, position)?;
+        else{
+            set_position(deps.storage, p_user, position)?;
+        }
     }
 
     //transfer liquidated amount to controller contract
@@ -109,6 +110,14 @@ pub fn try_set_asset(deps: DepsMut, asset: Asset) -> Result<Response, ContractEr
 
     Ok(Response::new().add_attributes(vec![
         ("Method", "try_set_asset")
+    ]))
+}
+
+pub fn try_set_controller(deps: DepsMut, controller: String) -> Result<Response, ContractError> {
+    CONTROLLER.save(deps.storage, &controller)?;
+
+    Ok(Response::new().add_attributes(vec![
+        ("Method", "try_set_Controller")
     ]))
 }
 
@@ -222,19 +231,21 @@ pub fn try_close_position(deps: DepsMut, env: Env, info: MessageInfo, sca_amount
     position.debt = position.debt - sca_amount;
     position.size = position.size - receive_collateral;
 
-    if sca_amount == position.debt{
+    if sca_amount == position.debt || position.size == Uint128::new(0) || position.size == Uint128::new(0){
         let closed_position = ClosedPosition{
             close_time: env.block.time.seconds(),
             size: position.initial_size,
             debt: position.initial_debt,
-            is_liquidated: false
+            is_liquidated: true
         };
 
         set_closed_position(deps.storage, info.sender.clone().into_string(), closed_position)?;
         remove_position(deps.storage, info.sender.clone().into_string());
     }
+    else{
+        set_position(deps.storage, info.sender.to_string(), position)?;
+    }
 
-    set_position(deps.storage, info.sender.to_string(), position)?;
     Ok(Response::new().add_messages(messages).add_attributes(vec![
         ("Method", "try_close_position")
     ]))

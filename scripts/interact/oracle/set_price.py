@@ -20,4 +20,4 @@ oracle = Oracle(network, deployer_key, None, ORACLE_CONTRACT_ADDR)
 
 
 oracle.get_price(SCA_CONTRACT_ADDR)
-oracle.set_price(deployer, SCA_CONTRACT_ADDR, "2000000")
+oracle.set_price(deployer, SCA_CONTRACT_ADDR, "1000000")

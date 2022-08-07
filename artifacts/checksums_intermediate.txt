@@ -1,0 +1,4 @@
+e7b3f63cf1e344351f33b4487bb35f72db6cb3ab1717d947d73a7e5fbecf7e93  target/wasm32-unknown-unknown/release/controller.wasm
+13a095322c982185efc1fa97b1c36cd8cbac7b5a55c9b2135efa9e3f8f499335  target/wasm32-unknown-unknown/release/mint.wasm
+afde1b8e083786f9efd6fea2acc7aebc2477948710200ab3aa894282cd8372ac  target/wasm32-unknown-unknown/release/oracle.wasm
+32e74d000b89f7bf273eb211897e82ea14d5c0da586225e4fdf8117be9f7ab26  target/wasm32-unknown-unknown/release/pair.wasm

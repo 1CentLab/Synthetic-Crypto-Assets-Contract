@@ -61,5 +61,10 @@ pub enum ExecuteMsg {
 
     //get asset price and perform checking liquidation
     MassUpdate {
+    },
+
+     //get asset price and perform checking liquidation
+    SetController {
+        controller: String
     }
 }
